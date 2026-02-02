@@ -337,6 +337,22 @@ def cleanup(namespace: str, keep_namespace: bool = False):
     
     if not keep_namespace:
         run_command(["kubectl", "delete", "namespace", namespace], check=False)
+        
+        # Wait for namespace to fully terminate (critical for next experiment)
+        import time
+        max_wait = 120  # 2 minutes
+        start = time.time()
+        while time.time() - start < max_wait:
+            result = run_command(
+                ["kubectl", "get", "namespace", namespace],
+                check=False
+            )
+            if result.returncode != 0:  # Namespace gone
+                break
+            time.sleep(5)
+        
+        # Extra buffer
+        time.sleep(5)
     
     log_event("cleanup_end", namespace=namespace)
 
@@ -486,13 +502,23 @@ def main():
         
     except Exception as e:
         log_event("experiment_error", error=str(e), run_id=run_id)
+        # Clean up temp file before calling cleanup
+        try:
+            temp_manifest = Path(f"/tmp/fl-deployment-{run_id}.yaml")
+            if temp_manifest.exists():
+                temp_manifest.unlink()
+        except:
+            pass
         cleanup("fl-experiment", args.keep_namespace)
         sys.exit(1)
     finally:
-        # Remove temp manifest
-        temp_manifest = Path(f"/tmp/fl-deployment-{run_id}.yaml")
-        if temp_manifest.exists():
-            temp_manifest.unlink()
+        # Remove temp manifest (if still exists)
+        try:
+            temp_manifest = Path(f"/tmp/fl-deployment-{run_id}.yaml")
+            if temp_manifest.exists():
+                temp_manifest.unlink()
+        except:
+            pass
 
 
 if __name__ == "__main__":
