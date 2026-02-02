@@ -32,10 +32,17 @@ def parse_server_log(log_file: Path) -> Dict:
             
             event = entry.get("event")
             
-            if event == "server_start":
+            if event == "experiment_start":
                 run_meta["run_id"] = entry.get("run_id", "unknown")
-                run_meta["sec_level"] = "SEC0"  # Extract from run_id if needed
-                run_meta["net_profile"] = "NET0"
+                # Extract SEC/NET from run_id (format: SEC0_NET0_timestamp)
+                run_id = entry.get("run_id", "unknown")
+                if "_" in run_id:
+                    parts = run_id.split("_")
+                    run_meta["sec_level"] = parts[0] if len(parts) > 0 else "unknown"
+                    run_meta["net_profile"] = parts[1] if len(parts) > 1 else "unknown"
+                else:
+                    run_meta["sec_level"] = "unknown"
+                    run_meta["net_profile"] = "unknown"
                 
             elif event == "round_start":
                 rounds.append({
@@ -43,16 +50,23 @@ def parse_server_log(log_file: Path) -> Dict:
                     "start_ts": entry.get("timestamp")
                 })
             
-            elif event == "round_end" or event == "round_complete":
+            elif event == "round_end":
                 round_id = entry.get("round")
                 # Find matching start
                 for r in rounds:
                     if r["round_id"] == round_id and "end_ts" not in r:
                         r["end_ts"] = entry.get("timestamp")
-                        r["accuracy"] = entry.get("test_accuracy", entry.get("accuracy", 0))
-                        r["loss"] = entry.get("test_loss", entry.get("loss", 0))
-                        r["failures"] = entry.get("failures", 0)
+                        r["accuracy"] = entry.get("test_accuracy", 0)
+                        r["loss"] = entry.get("test_loss", 0)
+                        r["failures"] = entry.get("num_failures", 0)
                         break
+            
+            elif event == "target_accuracy_reached":
+                # Store TTA milestone
+                target = entry.get("target_accuracy")
+                ts = entry.get("timestamp")
+                if target and ts:
+                    run_meta[f"tta_{int(target*100)}"] = ts
     
     # Calculate durations
     for r in rounds:

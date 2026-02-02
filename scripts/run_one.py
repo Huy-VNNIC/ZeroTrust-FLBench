@@ -249,6 +249,46 @@ def collect_logs(namespace: str, run_id: str, output_dir: Path):
     log_event("logs_collect_end", namespace=namespace, output_dir=str(output_dir))
 
 
+def save_metadata(output_dir: Path, run_id: str, config: dict):
+    """Save run metadata to meta.json"""
+    import subprocess
+    
+    # Get git commit hash
+    try:
+        commit_hash = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=False
+        ).stdout.strip()
+    except:
+        commit_hash = "unknown"
+    
+    # Get versions
+    metadata = {
+        "run_id": run_id,
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "config": config,
+        "versions": {
+            "git_commit": commit_hash,
+            "python": sys.version,
+            "flwr": "1.7.0",  # From requirements.txt
+            "torch": "2.1.0",
+            "kubernetes": "minikube"
+        },
+        "environment": {
+            "os": os.uname().sysname if hasattr(os, 'uname') else "unknown",
+            "hostname": os.uname().nodename if hasattr(os, 'uname') else "unknown"
+        }
+    }
+    
+    meta_file = output_dir / "meta.json"
+    with open(meta_file, 'w') as f:
+        json.dump(metadata, f, indent=2)
+    
+    log_event("metadata_saved", file=str(meta_file))
+
+
 def cleanup(namespace: str, keep_namespace: bool = False):
     """Delete resources (optionally keep namespace)"""
     log_event("cleanup_start", namespace=namespace, keep_namespace=keep_namespace)
@@ -380,7 +420,20 @@ def main():
             sys.exit(1)
         
         # Collect logs
-        collect_logs("fl-experiment", run_id, args.output_dir)
+        output_dir_run = args.output_dir / run_id
+        collect_logs("fl-experiment", run_id, output_dir_run)
+        
+        # Save metadata
+        config_dict = {
+            "sec_level": args.sec_level,
+            "net_profile": args.net_profile,
+            "num_clients": args.num_clients,
+            "num_rounds": args.num_rounds,
+            "iid": args.iid,
+            "alpha": args.alpha,
+            "data_seed": args.data_seed
+        }
+        save_metadata(output_dir_run, run_id, config_dict)
         
         # Cleanup
         cleanup("fl-experiment", args.keep_namespace)

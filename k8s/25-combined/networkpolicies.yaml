@@ -1,0 +1,108 @@
+---
+# Default deny all ingress and egress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: fl-experiment
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+---
+# Allow FL server to receive traffic from clients (with Linkerd proxy support)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-fl-server-ingress
+  namespace: fl-experiment
+spec:
+  podSelector:
+    matchLabels:
+      app: fl-server
+  policyTypes:
+  - Ingress
+  ingress:
+  # Allow from FL clients on app port
+  - from:
+    - podSelector:
+        matchLabels:
+          app: fl-client
+    ports:
+    - protocol: TCP
+      port: 8080
+    # CRITICAL: Allow Linkerd proxy inbound port (mTLS traffic)
+    - protocol: TCP
+      port: 4143
+---
+# Allow FL clients to connect to server (with Linkerd proxy support)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-fl-client-egress
+  namespace: fl-experiment
+spec:
+  podSelector:
+    matchLabels:
+      app: fl-client
+  policyTypes:
+  - Egress
+  egress:
+  # Allow to FL server on app port
+  - to:
+    - podSelector:
+        matchLabels:
+          app: fl-server
+    ports:
+    - protocol: TCP
+      port: 8080
+    # CRITICAL: Allow Linkerd proxy outbound port
+    - protocol: TCP
+      port: 4143
+  # Allow DNS
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: UDP
+      port: 53
+  # CRITICAL: Allow egress to Linkerd control plane (for proxy identity/config)
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          linkerd.io/control-plane-ns: linkerd
+    ports:
+    - protocol: TCP
+      port: 8086  # linkerd-proxy-api
+    - protocol: TCP
+      port: 8089  # linkerd-proxy-admin
+---
+# Allow FL server egress to DNS
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-fl-server-egress
+  namespace: fl-experiment
+spec:
+  podSelector:
+    matchLabels:
+      app: fl-server
+  policyTypes:
+  - Egress
+  egress:
+  # Allow DNS
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: UDP
+      port: 53
+  # CRITICAL: Allow egress to Linkerd control plane
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          linkerd.io/control-plane-ns: linkerd
+    ports:
+    - protocol: TCP
+      port: 8086
+    - protocol: TCP
+      port: 8089
