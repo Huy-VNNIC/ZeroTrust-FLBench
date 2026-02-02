@@ -86,7 +86,8 @@ def create_iid_split(
     # Split into num_clients parts (deterministic)
     splits = np.array_split(indices, num_clients)
     
-    return splits[client_id]
+    # Convert 1-based client_id to 0-based index
+    return splits[client_id - 1]
 
 
 def create_noniid_split(
