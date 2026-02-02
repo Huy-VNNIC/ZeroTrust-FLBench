@@ -99,13 +99,45 @@ def apply_network_profile(profile: str, namespace: str):
         ])
 
 
-def inject_run_id(manifest_path: Path, run_id: str, output_path: Path):
-    """Replace PLACEHOLDER with actual RUN_ID in manifest"""
+def inject_run_id(manifest_path: Path, run_id: str, output_path: Path, num_rounds: int = None, 
+                  num_clients: int = None, is_iid: bool = None, data_seed: int = None):
+    """Replace PLACEHOLDER and inject experiment parameters into manifest"""
     with open(manifest_path) as f:
         content = f.read()
     
     # Replace all PLACEHOLDER occurrences with actual RUN_ID
     content = content.replace('run-id: "PLACEHOLDER"', f'run-id: "{run_id}"')
+    
+    # Inject --num-rounds if provided
+    if num_rounds is not None:
+        content = content.replace('- "--num-rounds=10"', f'- "--num-rounds={num_rounds}"')
+    
+    # Inject --min-clients if provided
+    if num_clients is not None:
+        content = content.replace('- "--min-clients=5"', f'- "--min-clients={num_clients}"')
+    
+    # Add --iid flag in client args if needed (add after data_seed)
+    # Server doesn't need this, only clients
+    if is_iid is not None and is_iid:
+        # For client Jobs, add --iid flag
+        content = content.replace(
+            '- "--server-address=fl-server:8080"',
+            '- "--server-address=fl-server:8080"\n          - "--iid"'
+        )
+    
+    # Inject data_seed if provided (for clients)
+    if data_seed is not None:
+        # Add after server-address for clients
+        if '--iid' not in content.replace('- "--server-address=fl-server:8080"', ''):
+            content = content.replace(
+                '- "--server-address=fl-server:8080"',
+                f'- "--server-address=fl-server:8080"\n          - "--data-seed={data_seed}"'
+            )
+        else:
+            content = content.replace(
+                '- "--iid"',
+                f'- "--iid"\n          - "--data-seed={data_seed}"'
+            )
     
     with open(output_path, 'w') as f:
         f.write(content)
@@ -114,7 +146,11 @@ def inject_run_id(manifest_path: Path, run_id: str, output_path: Path):
         "manifest_prepared",
         source=str(manifest_path),
         output=str(output_path),
-        run_id=run_id
+        run_id=run_id,
+        num_rounds=num_rounds,
+        num_clients=num_clients,
+        is_iid=is_iid,
+        data_seed=data_seed
     )
 
 
@@ -394,9 +430,17 @@ def main():
             log_event("manifest_not_found", path=str(manifest_path))
             sys.exit(1)
         
-        # Create temporary manifest with RUN_ID injected
+        # Create temporary manifest with RUN_ID and parameters injected
         temp_manifest = Path(f"/tmp/fl-deployment-{run_id}.yaml")
-        inject_run_id(manifest_path, run_id, temp_manifest)
+        inject_run_id(
+            manifest_path, 
+            run_id, 
+            temp_manifest,
+            num_rounds=args.num_rounds,
+            num_clients=args.num_clients,
+            is_iid=args.iid,
+            data_seed=args.data_seed
+        )
         
         # Apply manifest
         log_event("apply_manifest", manifest=str(temp_manifest))
