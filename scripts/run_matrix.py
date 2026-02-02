@@ -433,12 +433,8 @@ def main():
             success_count += 1
         else:
             fail_count += 1
-            
-            # Ask if should continue on failure
-            response = input("❓ Continue despite failure? (y/n): ")
-            if response.lower() != 'y':
-                print("🛑 Stopping experiment run")
-                break
+            print("⚠️  Continuing despite failure (auto-continue enabled)")
+            # Continue automatically - no user input needed
     
     print("\n" + "="*80)
     print("🏁 Experiment run complete")

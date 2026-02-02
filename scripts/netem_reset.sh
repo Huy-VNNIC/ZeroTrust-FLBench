@@ -44,13 +44,31 @@ reset_node() {
 if [ "$CLUSTER_TYPE" == "minikube" ]; then
     echo "Using minikube SSH"
     
-    INTERFACE=$(minikube ssh "ip route | grep default | awk '{print \$5}' | head -1")
+    # Get default interface from minikube
+    INTERFACE=$(minikube ssh "ip route | grep default | awk '{print \$5}' | head -1" 2>/dev/null | tr -d '\r')
+    
+    # Fallback to common interfaces if detection fails
+    if [ -z "$INTERFACE" ]; then
+        echo "Warning: Could not detect interface, trying common names..."
+        for iface in eth0 eth1 enp0s3 enp0s8; do
+            if minikube ssh "ip link show $iface" >/dev/null 2>&1; then
+                INTERFACE=$iface
+                break
+            fi
+        done
+    fi
+    
+    if [ -z "$INTERFACE" ]; then
+        echo "Error: Could not find network interface"
+        exit 1
+    fi
+    
     echo "Interface: $INTERFACE"
     
     minikube ssh "sudo tc qdisc del dev $INTERFACE root 2>/dev/null || echo 'No qdisc to remove'"
     
     echo -e "${GREEN}Verification:${NC}"
-    minikube ssh "sudo tc qdisc show dev $INTERFACE"
+    minikube ssh "sudo tc qdisc show dev $INTERFACE" 2>/dev/null || echo "(Interface: $INTERFACE)"
     
 else
     NODES=$(kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
