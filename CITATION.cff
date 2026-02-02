@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you use ZeroTrust-FLBench in your research, please cite it as below."
+title: "ZeroTrust-FLBench: Design-space Evaluation of Network Isolation and mTLS for Federated Learning on Edge Kubernetes"
+version: 1.0.0
+date-released: 2026-02-02
+authors:
+  - family-names: "Your Last Name"
+    given-names: "Your First Name"
+    affiliation: "Your University"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+repository-code: "https://github.com/yourusername/ZeroTrust-FLBench"
+keywords:
+  - federated learning
+  - kubernetes
+  - zero-trust
+  - network policy
+  - mTLS
+  - service mesh
+  - edge computing
+  - security
+  - performance evaluation
+license: MIT
+abstract: |
+  ZeroTrust-FLBench is a comprehensive benchmark for evaluating zero-trust 
+  networking mechanisms (NetworkPolicy, mTLS/service mesh) in Federated 
+  Learning deployments on Kubernetes. It provides:
+  
+  - Complete FL implementation with Flower framework
+  - Security configurations (SEC0-SEC3)
+  - Network emulation for edge conditions
+  - Automated experiment runner
+  - FL-specific metrics (time-to-accuracy, round tail latency)
+  - Reproducible measurement methodology
+  
+  The benchmark enables systematic evaluation of security-performance 
+  trade-offs and provides deployment guidelines for practitioners.

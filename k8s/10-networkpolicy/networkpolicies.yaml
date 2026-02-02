@@ -1,0 +1,136 @@
+---
+# Default deny all traffic
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: fl-experiment
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+---
+# Allow clients to connect to server (gRPC)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-clients-to-server
+  namespace: fl-experiment
+spec:
+  podSelector:
+    matchLabels:
+      app: fl-server
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: fl-client
+    ports:
+    - protocol: TCP
+      port: 8080
+---
+# Allow clients egress to server
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-clients-egress-to-server
+  namespace: fl-experiment
+spec:
+  podSelector:
+    matchLabels:
+      app: fl-client
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: fl-server
+    ports:
+    - protocol: TCP
+      port: 8080
+---
+# Allow server egress to clients (return traffic)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-server-egress-to-clients
+  namespace: fl-experiment
+spec:
+  podSelector:
+    matchLabels:
+      app: fl-server
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: fl-client
+---
+# Allow DNS for all pods
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: fl-experiment
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+---
+# Allow access to Kubernetes API (needed for some operations)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-k8s-api
+  namespace: fl-experiment
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          component: apiserver
+    ports:
+    - protocol: TCP
+      port: 443
+  # Also allow direct API server access
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 6443
+---
+# Allow metrics scraping (if Prometheus is deployed)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scrape
+  namespace: fl-experiment
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 8000  # Adjust based on your metrics port

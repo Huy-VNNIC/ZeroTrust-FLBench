@@ -1,0 +1,59 @@
+# values for Prometheus Helm chart
+# Used for ZeroTrust-FLBench monitoring
+
+prometheus:
+  prometheusSpec:
+    # Increase retention for experiment data
+    retention: 30d
+    
+    # Storage
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+    
+    # Scrape interval
+    scrapeInterval: 15s
+    evaluationInterval: 15s
+    
+    # Additional scrape configs for FL namespace
+    additionalScrapeConfigs:
+      - job_name: 'fl-experiment'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - fl-experiment
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: fl-(server|client)
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            target_label: app
+
+grafana:
+  enabled: true
+  adminPassword: "flbench2026"
+  
+  # Persistent storage for dashboards
+  persistence:
+    enabled: true
+    size: 1Gi
+
+# Disable components we don't need for FL experiments
+alertmanager:
+  enabled: false
+
+kubeStateMetrics:
+  enabled: true
+
+nodeExporter:
+  enabled: true
+
+prometheusOperator:
+  enabled: true
