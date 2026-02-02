@@ -152,6 +152,7 @@ def inject_run_id(manifest_path: Path, run_id: str, output_path: Path, num_round
     
     # Replace all PLACEHOLDER occurrences with actual RUN_ID
     content = content.replace('run-id: "PLACEHOLDER"', f'run-id: "{run_id}"')
+    content = content.replace('PLACEHOLDER', run_id)  # Replace resource names too
     
     # Inject --num-rounds if provided
     if num_rounds is not None:
