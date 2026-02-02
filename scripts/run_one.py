@@ -154,27 +154,27 @@ def inject_run_id(manifest_path: Path, run_id: str, output_path: Path, num_round
     )
 
 
-def wait_for_server_ready(namespace: str, timeout: int = 300):
+def wait_for_server_ready(namespace: str, run_id: str, timeout: int = 300):
     """Wait for FL server pod to be Running"""
-    log_event("wait_server_start", namespace=namespace, timeout_sec=timeout)
+    log_event("wait_server_start", namespace=namespace, run_id=run_id, timeout_sec=timeout)
     start = time.time()
     
     while time.time() - start < timeout:
         result = run_command([
             "kubectl", "get", "pods",
             "-n", namespace,
-            "-l", "app=fl-server",
+            "-l", f"run-id={run_id},app=fl-server",
             "-o", "jsonpath={.items[0].status.phase}"
         ], check=False)
         
         phase = result.stdout.strip()
         if phase == "Running":
-            log_event("wait_server_ready", namespace=namespace, duration_sec=time.time() - start)
+            log_event("wait_server_ready", namespace=namespace, run_id=run_id, duration_sec=time.time() - start)
             return True
         
         time.sleep(2)
     
-    log_event("wait_server_timeout", namespace=namespace, timeout_sec=timeout)
+    log_event("wait_server_timeout", namespace=namespace, run_id=run_id, timeout_sec=timeout)
     return False
 
 
@@ -468,7 +468,7 @@ def main():
         run_command(["kubectl", "apply", "-f", str(temp_manifest)])
         
         # Wait for server to be ready
-        if not wait_for_server_ready("fl-experiment", timeout=300):
+        if not wait_for_server_ready("fl-experiment", run_id, timeout=300):
             log_event("experiment_failed", reason="server_not_ready")
             cleanup("fl-experiment", run_id)
             sys.exit(1)

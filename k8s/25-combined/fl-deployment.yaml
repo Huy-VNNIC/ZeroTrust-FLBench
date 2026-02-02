@@ -11,7 +11,7 @@ metadata:
 apiVersion: v1
 kind: Service
 metadata:
-  name: fl-server
+  name: fl-server-PLACEHOLDER
   namespace: fl-experiment
   labels:
     app: fl-server
@@ -30,7 +30,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fl-server
+  name: fl-server-PLACEHOLDER
   namespace: fl-experiment
   labels:
     app: fl-server
@@ -82,7 +82,7 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: fl-client-1
+  name: fl-client-1-PLACEHOLDER
   namespace: fl-experiment
   labels:
     app: fl-client
@@ -106,7 +106,7 @@ spec:
         args:
           - "--client-id=1"
           - "--num-clients=5"
-          - "--server-address=fl-server:8080"
+          - "--server-address=fl-server-PLACEHOLDER:8080"
           - "--iid"
           - "--data-seed=42"
         env:
@@ -132,7 +132,7 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: fl-client-2
+  name: fl-client-2-PLACEHOLDER
   namespace: fl-experiment
   labels:
     app: fl-client
@@ -156,7 +156,7 @@ spec:
         args:
           - "--client-id=2"
           - "--num-clients=5"
-          - "--server-address=fl-server:8080"
+          - "--server-address=fl-server-PLACEHOLDER:8080"
           - "--iid"
           - "--data-seed=42"
         env:
@@ -182,7 +182,7 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: fl-client-3
+  name: fl-client-3-PLACEHOLDER
   namespace: fl-experiment
   labels:
     app: fl-client
@@ -206,7 +206,7 @@ spec:
         args:
           - "--client-id=3"
           - "--num-clients=5"
-          - "--server-address=fl-server:8080"
+          - "--server-address=fl-server-PLACEHOLDER:8080"
           - "--iid"
           - "--data-seed=42"
         env:
@@ -232,7 +232,7 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: fl-client-4
+  name: fl-client-4-PLACEHOLDER
   namespace: fl-experiment
   labels:
     app: fl-client
@@ -256,7 +256,7 @@ spec:
         args:
           - "--client-id=4"
           - "--num-clients=5"
-          - "--server-address=fl-server:8080"
+          - "--server-address=fl-server-PLACEHOLDER:8080"
           - "--iid"
           - "--data-seed=42"
         env:
@@ -282,7 +282,7 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: fl-client-5
+  name: fl-client-5-PLACEHOLDER
   namespace: fl-experiment
   labels:
     app: fl-client
@@ -306,7 +306,7 @@ spec:
         args:
           - "--client-id=5"
           - "--num-clients=5"
-          - "--server-address=fl-server:8080"
+          - "--server-address=fl-server-PLACEHOLDER:8080"
           - "--iid"
           - "--data-seed=42"
         env:
