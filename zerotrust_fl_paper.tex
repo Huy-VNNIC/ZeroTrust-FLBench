@@ -4,7 +4,6 @@
 
 \usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
-\usepackage{algorithmic}
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
@@ -12,8 +11,6 @@
 \usepackage{multirow}
 \usepackage{url}
 \usepackage{hyperref}
-\usepackage{tikz}
-\usetikzlibrary{shapes,arrows,positioning}
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
@@ -104,40 +101,31 @@ ZeroTrust-FLBench is designed as a Kubernetes-native evaluation framework that e
 
 \begin{figure}[htbp]
 \centering
-\begin{tikzpicture}[node distance=1.5cm, auto, thick,
-    client/.style={rectangle, draw, fill=lightblue, text centered, minimum height=0.8cm, minimum width=1.5cm},
-    server/.style={rectangle, draw, fill=lightpink, text centered, minimum height=1.2cm, minimum width=2cm},
-    security/.style={rectangle, draw, text centered, minimum height=0.6cm, minimum width=2.5cm},
-    network/.style={rectangle, draw, fill=lightyellow, text centered, minimum height=0.6cm, minimum width=3cm}]
-
-% FL Server
-\node [server] (server) {FL Server\\(Aggregator)};
-
-% Clients
-\node [client, left=2cm of server, yshift=1cm] (client1) {Client 1};
-\node [client, left=2cm of server] (client2) {Client 2};  
-\node [client, left=2cm of server, yshift=-1cm] (client3) {Client 3};
-
-% Security configurations
-\node [security, right=2cm of server, yshift=1.5cm, fill=lightblue!30] (sec0) {SEC0: Baseline};
-\node [security, right=2cm of server, yshift=0.5cm, fill=orange!30] (sec1) {SEC1: NetworkPolicy};
-\node [security, right=2cm of server, yshift=-0.5cm, fill=lightgreen!30] (sec2) {SEC2: mTLS};
-\node [security, right=2cm of server, yshift=-1.5cm, fill=red!30] (sec3) {SEC3: Combined};
-
-% Network profiles  
-\node [network, below=1.5cm of server] (network) {Network Profiles: NET0 (0ms), NET2 (50ms)};
-
-% Arrows
-\draw [->] (client1) -- (server);
-\draw [->] (client2) -- (server);
-\draw [->] (client3) -- (server);
-
-% Kubernetes cluster boundary
-\draw [dashed, thick] (-4,-2.5) rectangle (6,3);
-\node at (-3.5,2.7) {\textbf{Kubernetes Cluster}};
-
-\end{tikzpicture}
-\caption{ZeroTrust-FLBench system architecture: FL server coordinates training across clients with configurable security levels (SEC0-SEC3) and network profiles in Kubernetes.}
+\small
+\begin{verbatim}
+       ZeroTrust-FLBench Architecture
+       
+    +----------------+      +------------------+
+    |    Client 1    |----->|                  |
+    +----------------+      |    FL Server     |
+                            |   (Aggregator)   |
+    +----------------+      |                  |
+    |    Client 2    |----->|                  |
+    +----------------+      +------------------+
+                            
+    +----------------+      Security Configs:
+    |    Client 3    |      * SEC0: Baseline
+    +----------------+      * SEC1: NetworkPolicy  
+                            * SEC2: mTLS
+                            * SEC3: Combined
+                            
+         Network: NET0 (0ms), NET2 (50ms)
+         
+    +---------------------------------------+
+    |         Kubernetes Cluster           |
+    +---------------------------------------+
+\end{verbatim}
+\caption{ZeroTrust-FLBench system architecture showing FL server, clients, and security configurations.}
 \label{fig:system_overview}
 \end{figure}
 
