@@ -115,20 +115,16 @@ def run_single_experiment(workload, data_dist, num_clients, net_profile, sec_con
     cmd = [
         "python3",
         str(script_dir / "run_one.py"),
-        "--workload", workload,
-        "--num-rounds", str(num_rounds),
-        "--num-clients", str(num_clients),
         "--sec-level", sec_config,
         "--net-profile", net_profile,
-        "--seed", str(seed),
-        "--run-id", run_id
+        "--num-clients", str(num_clients),
+        "--num-rounds", str(num_rounds),
+        "--data-seed", str(seed)
     ]
     
     # Add IID/non-IID flag
     if data_dist == "iid":
         cmd.append("--iid")
-    else:
-        cmd.append("--noniid")
     
     print(f"🔧 Command: {' '.join(cmd)}")
     
