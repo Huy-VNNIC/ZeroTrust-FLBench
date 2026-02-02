@@ -1,38 +1,32 @@
 ---
-# Namespace for baseline FL experiments (SEC0)
 apiVersion: v1
 kind: Namespace
 metadata:
   name: fl-experiment
   labels:
-    security-level: sec0
+    security-config: SEC0
+    network-profile: NET0
 ---
-# Service for FL Server
 apiVersion: v1
 kind: Service
 metadata:
   name: fl-server
   namespace: fl-experiment
-  labels:
-    app: fl-server
 spec:
-  type: ClusterIP
-  ports:
-  - port: 8080
-    targetPort: 8080
-    protocol: TCP
-    name: grpc
   selector:
     app: fl-server
+  ports:
+    - name: grpc
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
 ---
-# Deployment for FL Server
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: fl-server
   namespace: fl-experiment
-  labels:
-    app: fl-server
 spec:
   replicas: 1
   selector:
@@ -42,7 +36,8 @@ spec:
     metadata:
       labels:
         app: fl-server
-        run-id: "PLACEHOLDER"  # FIX: Will be replaced by run script
+        run-id: "PLACEHOLDER"  # Will be replaced by run script
+        component: server
     spec:
       containers:
       - name: fl-server
@@ -50,9 +45,8 @@ spec:
         imagePullPolicy: IfNotPresent
         command: ["python", "/app/src/fl_server.py"]
         args:
-          - "--num-rounds=10"
-          - "--min-fit-clients=5"
-          - "--min-available-clients=5"
+          - "--num-rounds=50"
+          - "--min-clients=5"
           - "--fraction-fit=1.0"
           - "--server-address=0.0.0.0:8080"
         ports:
@@ -62,7 +56,7 @@ spec:
         - name: RUN_ID
           valueFrom:
             fieldRef:
-              fieldPath: metadata.labels['run-id']  # FIX: Now label exists
+              fieldPath: metadata.labels['run-id']
         resources:
           requests:
             memory: "512Mi"
@@ -77,15 +71,54 @@ spec:
       - name: data
         emptyDir: {}
 ---
-# Job for FL Client 1
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fl-client-0
+  namespace: fl-experiment
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: fl-client
+        client-id: "0"
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: fl-client
+        image: zerotrust-flbench:latest
+        imagePullPolicy: IfNotPresent
+        command: ["python", "/app/src/fl_client.py"]
+        args:
+          - "--client-id=0"
+          - "--num-clients=5"
+          - "--server-address=fl-server:8080"
+          - "--iid"
+        env:
+        - name: RUN_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['run-id']
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: data
+        emptyDir: {}
+---
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: fl-client-1
   namespace: fl-experiment
-  labels:
-    app: fl-client
-    client-id: "1"
 spec:
   backoffLimit: 0
   template:
@@ -93,7 +126,7 @@ spec:
       labels:
         app: fl-client
         client-id: "1"
-        run-id: "PLACEHOLDER"  # FIX: Will be replaced by run script
+        run-id: "PLACEHOLDER"  # Will be replaced by run script
     spec:
       restartPolicy: Never
       containers:
@@ -106,12 +139,6 @@ spec:
           - "--num-clients=5"
           - "--server-address=fl-server:8080"
           - "--iid"
-          - "--data-seed=42"
-        env:
-        - name: RUN_ID
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.labels['run-id']  # FIX: Now label exists
         resources:
           requests:
             memory: "512Mi"
@@ -126,15 +153,11 @@ spec:
       - name: data
         emptyDir: {}
 ---
-# Job for FL Client 2
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: fl-client-2
   namespace: fl-experiment
-  labels:
-    app: fl-client
-    client-id: "2"
 spec:
   backoffLimit: 0
   template:
@@ -142,7 +165,6 @@ spec:
       labels:
         app: fl-client
         client-id: "2"
-        run-id: "PLACEHOLDER"  # FIX: Will be replaced by run script
     spec:
       restartPolicy: Never
       containers:
@@ -155,12 +177,6 @@ spec:
           - "--num-clients=5"
           - "--server-address=fl-server:8080"
           - "--iid"
-          - "--data-seed=42"
-        env:
-        - name: RUN_ID
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.labels['run-id']  # FIX: Now label exists
         resources:
           requests:
             memory: "512Mi"
@@ -175,15 +191,11 @@ spec:
       - name: data
         emptyDir: {}
 ---
-# Job for FL Client 3
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: fl-client-3
   namespace: fl-experiment
-  labels:
-    app: fl-client
-    client-id: "3"
 spec:
   backoffLimit: 0
   template:
@@ -191,7 +203,6 @@ spec:
       labels:
         app: fl-client
         client-id: "3"
-        run-id: "PLACEHOLDER"  # FIX: Will be replaced by run script
     spec:
       restartPolicy: Never
       containers:
@@ -204,12 +215,6 @@ spec:
           - "--num-clients=5"
           - "--server-address=fl-server:8080"
           - "--iid"
-          - "--data-seed=42"
-        env:
-        - name: RUN_ID
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.labels['run-id']  # FIX: Now label exists
         resources:
           requests:
             memory: "512Mi"
@@ -224,15 +229,11 @@ spec:
       - name: data
         emptyDir: {}
 ---
-# Job for FL Client 4
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: fl-client-4
   namespace: fl-experiment
-  labels:
-    app: fl-client
-    client-id: "4"
 spec:
   backoffLimit: 0
   template:
@@ -240,7 +241,6 @@ spec:
       labels:
         app: fl-client
         client-id: "4"
-        run-id: "PLACEHOLDER"  # FIX: Will be replaced by run script
     spec:
       restartPolicy: Never
       containers:
@@ -253,61 +253,6 @@ spec:
           - "--num-clients=5"
           - "--server-address=fl-server:8080"
           - "--iid"
-          - "--data-seed=42"
-        env:
-        - name: RUN_ID
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.labels['run-id']  # FIX: Now label exists
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "500m"
-          limits:
-            memory: "1Gi"
-            cpu: "1000m"
-        volumeMounts:
-        - name: data
-          mountPath: /data
-      volumes:
-      - name: data
-        emptyDir: {}
----
-# Job for FL Client 5
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: fl-client-5
-  namespace: fl-experiment
-  labels:
-    app: fl-client
-    client-id: "5"
-spec:
-  backoffLimit: 0
-  template:
-    metadata:
-      labels:
-        app: fl-client
-        client-id: "5"
-        run-id: "PLACEHOLDER"  # FIX: Will be replaced by run script
-    spec:
-      restartPolicy: Never
-      containers:
-      - name: fl-client
-        image: zerotrust-flbench:latest
-        imagePullPolicy: IfNotPresent
-        command: ["python", "/app/src/fl_client.py"]
-        args:
-          - "--client-id=5"
-          - "--num-clients=5"
-          - "--server-address=fl-server:8080"
-          - "--iid"
-          - "--data-seed=42"
-        env:
-        - name: RUN_ID
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.labels['run-id']  # FIX: Now label exists
         resources:
           requests:
             memory: "512Mi"

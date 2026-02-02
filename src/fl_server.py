@@ -185,8 +185,16 @@ class LoggingFedAvg(FedAvg):
         return aggregated_parameters, aggregated_metrics
     
     def _parameters_to_state_dict(self, parameters: Parameters) -> Dict:
-        """Convert Flower parameters to PyTorch state dict"""
-        params_arrays = [np.array(param) for param in parameters.tensors]
+        """
+        Convert Flower parameters to PyTorch state dict
+        
+        FIX: Use flwr.common.parameters_to_ndarrays() - Parameters.tensors are BYTES, not ndarrays
+        See: https://flower.ai/docs/framework/ref-api/flwr.common.html#flwr.common.Parameters
+        """
+        from flwr.common import parameters_to_ndarrays
+        
+        # Convert Parameters to list of numpy arrays (handles bytes->ndarray conversion)
+        params_arrays = parameters_to_ndarrays(parameters)
         params_dict = {}
         
         # Map parameter arrays to model layers

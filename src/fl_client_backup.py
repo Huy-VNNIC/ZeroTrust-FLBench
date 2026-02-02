@@ -1,11 +1,6 @@
 """
-ZeroTrust-FLBench: Federated Learning Client (FIXED VERSION)
+ZeroTrust-FLBench: Federated Learning Client
 Uses Flower framework with enhanced logging
-
-CRITICAL FIXES:
-1. Data split uses SHARED seed for non-overlapping partitions
-2. Model returns logits (not log_softmax) for CrossEntropyLoss
-3. Proper IID and Non-IID split functions
 """
 
 import time
@@ -47,117 +42,30 @@ class SimpleCNN(nn.Module):
         x = self.conv2(x)
         x = F.relu(x)
         x = F.max_pool2d(x, 2)
-        self.dropout1(x)
+        x = self.dropout1(x)
         x = torch.flatten(x, 1)
         x = self.fc1(x)
         x = F.relu(x)
         x = self.dropout2(x)
         x = self.fc2(x)
-        # FIX: Return logits (not log_softmax) for CrossEntropyLoss
+        # Return logits (not log_softmax) for CrossEntropyLoss
         return x
-
-
-def create_iid_split(
-    dataset_size: int,
-    num_clients: int,
-    client_id: int,
-    data_seed: int
-) -> np.ndarray:
-    """
-    Create IID split with SHARED seed (all clients use same partition)
-    
-    CRITICAL: All clients must call this with same data_seed to get
-    non-overlapping, deterministic splits
-    
-    Args:
-        dataset_size: Total number of samples
-        num_clients: Total number of clients
-        client_id: This client's ID
-        data_seed: Shared seed for reproducibility
-    
-    Returns:
-        Indices for this client
-    """
-    # Use SHARED seed to create same random permutation for all clients
-    rng = np.random.RandomState(data_seed)
-    indices = np.arange(dataset_size)
-    rng.shuffle(indices)
-    
-    # Split into num_clients parts (deterministic)
-    splits = np.array_split(indices, num_clients)
-    
-    return splits[client_id]
-
-
-def create_noniid_split(
-    labels: np.ndarray,
-    num_clients: int,
-    client_id: int,
-    alpha: float,
-    data_seed: int
-) -> np.ndarray:
-    """
-    Create Non-IID split using Dirichlet distribution with SHARED seed
-    
-    CRITICAL: All clients must call this with same data_seed to get
-    the same Dirichlet distribution and non-overlapping splits
-    
-    Args:
-        labels: Array of all training labels
-        num_clients: Total number of clients
-        client_id: This client's ID
-        alpha: Dirichlet concentration (lower = more skewed)
-        data_seed: Shared seed for reproducibility
-    
-    Returns:
-        Indices for this client
-    """
-    num_classes = len(np.unique(labels))
-    
-    # FIX: Use SHARED seed (critical!)
-    rng = np.random.RandomState(data_seed)
-    
-    # Create Dirichlet distribution per class (same for all clients)
-    label_distribution = rng.dirichlet([alpha] * num_clients, num_classes)
-    
-    # Assign samples to clients based on distribution
-    client_indices = []
-    
-    for class_id in range(num_classes):
-        class_indices = np.where(labels == class_id)[0]
-        # Shuffle with same seed
-        rng.shuffle(class_indices)
-        
-        # Split this class's samples according to Dirichlet proportions
-        splits = np.cumsum(label_distribution[class_id])
-        splits = (splits * len(class_indices)).astype(int)
-        
-        start_idx = 0 if client_id == 0 else splits[client_id - 1]
-        end_idx = splits[client_id]
-        
-        client_indices.extend(class_indices[start_idx:end_idx])
-    
-    return np.array(client_indices)
 
 
 def load_data(
     client_id: int, 
     num_clients: int, 
     iid: bool = True,
-    alpha: float = 0.5,
-    data_seed: int = 42
+    alpha: float = 0.5
 ) -> Tuple[DataLoader, DataLoader]:
     """
     Load and partition MNIST data for a specific client
-    
-    CRITICAL: Uses shared data_seed for deterministic, non-overlapping splits
     
     Args:
         client_id: Client identifier (0 to num_clients-1)
         num_clients: Total number of clients
         iid: If True, use IID split; if False, use Non-IID Dirichlet split
         alpha: Dirichlet concentration parameter (lower = more skewed)
-        data_seed: Shared seed for deterministic data partitioning
     """
     transform = transforms.Compose([
         transforms.ToTensor(),
@@ -179,23 +87,20 @@ def load_data(
         transform=transform
     )
     
-    # FIX: Create data partition with SHARED seed (critical for reproducibility)
+    # Create data partition
     if iid:
-        # IID split: uniform random partition with shared seed
-        client_indices = create_iid_split(
-            len(trainset),
-            num_clients,
-            client_id,
-            data_seed
-        )
+        # IID split: uniform random partition
+        indices = np.arange(len(trainset))
+        np.random.shuffle(indices)
+        split = np.array_split(indices, num_clients)
+        client_indices = split[client_id]
     else:
-        # Non-IID split: Dirichlet allocation with shared seed
+        # Non-IID split: Dirichlet allocation
         client_indices = create_noniid_split(
             trainset.targets.numpy(),
             num_clients,
             client_id,
-            alpha,
-            data_seed
+            alpha
         )
     
     # Create client's training subset
@@ -211,11 +116,55 @@ def load_data(
         "num_samples": len(client_indices),
         "iid": iid,
         "alpha": alpha if not iid else None,
-        "data_seed": data_seed,
         "timestamp": time.time()
     }))
     
     return trainloader, testloader
+
+
+def create_noniid_split(
+    labels: np.ndarray,
+    num_clients: int,
+    client_id: int,
+    alpha: float
+) -> np.ndarray:
+    """
+    Create Non-IID split using Dirichlet distribution
+    
+    Args:
+        labels: Array of all training labels
+        num_clients: Total number of clients
+        client_id: This client's ID
+        alpha: Dirichlet concentration (lower = more skewed)
+    
+    Returns:
+        Indices for this client
+    """
+    num_classes = len(np.unique(labels))
+    
+    # For reproducibility
+    np.random.seed(42 + client_id)
+    
+    # Create Dirichlet distribution per class
+    label_distribution = np.random.dirichlet([alpha] * num_clients, num_classes)
+    
+    # Assign samples to clients based on distribution
+    client_indices = []
+    
+    for class_id in range(num_classes):
+        class_indices = np.where(labels == class_id)[0]
+        np.random.shuffle(class_indices)
+        
+        # Split this class's samples according to Dirichlet proportions
+        splits = np.cumsum(label_distribution[class_id])
+        splits = (splits * len(class_indices)).astype(int)
+        
+        start_idx = 0 if client_id == 0 else splits[client_id - 1]
+        end_idx = splits[client_id]
+        
+        client_indices.extend(class_indices[start_idx:end_idx])
+    
+    return np.array(client_indices)
 
 
 def train(
@@ -225,7 +174,6 @@ def train(
     device: torch.device
 ) -> Tuple[int, float]:
     """Train model for specified epochs"""
-    # FIX: CrossEntropyLoss expects logits (not log_softmax)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
     
@@ -238,7 +186,7 @@ def train(
             data, target = data.to(device), target.to(device)
             
             optimizer.zero_grad()
-            output = model(data)  # logits
+            output = model(data)
             loss = criterion(output, target)
             loss.backward()
             optimizer.step()
@@ -256,7 +204,6 @@ def test(
     device: torch.device
 ) -> Tuple[float, float]:
     """Evaluate model on test set"""
-    criterion = nn.CrossEntropyLoss(reduction='sum')
     model.eval()
     test_loss = 0
     correct = 0
@@ -264,8 +211,8 @@ def test(
     with torch.no_grad():
         for data, target in testloader:
             data, target = data.to(device), target.to(device)
-            output = model(data)  # logits
-            test_loss += criterion(output, target).item()
+            output = model(data)
+            test_loss += F.nll_loss(output, target, reduction='sum').item()
             pred = output.argmax(dim=1, keepdim=True)
             correct += pred.eq(target.view_as(pred)).sum().item()
     
@@ -373,32 +320,26 @@ def main():
     parser.add_argument("--server-address", type=str, default="fl-server:8080")
     parser.add_argument("--iid", action="store_true", default=True)
     parser.add_argument("--alpha", type=float, default=0.5)
-    parser.add_argument("--data-seed", type=int, default=42, help="Shared seed for data partitioning")
-    parser.add_argument("--train-seed", type=int, default=None, help="Client-specific training seed")
     args = parser.parse_args()
     
-    # FIX: Set client-specific training seed (for model init and mini-batch order)
-    train_seed = args.train_seed if args.train_seed is not None else (42 + args.client_id)
-    torch.manual_seed(train_seed)
-    np.random.seed(train_seed)
+    # Set client-specific seed
+    torch.manual_seed(42 + args.client_id)
+    np.random.seed(42 + args.client_id)
     
     logger.info(json.dumps({
         "event": "client_start",
         "client_id": args.client_id,
         "server_address": args.server_address,
-        "data_seed": args.data_seed,
-        "train_seed": train_seed,
         "run_id": os.getenv("RUN_ID", "unknown"),
         "timestamp": time.time()
     }))
     
-    # Load data with shared data_seed (critical for non-overlapping splits)
+    # Load data
     trainloader, testloader = load_data(
         client_id=args.client_id,
         num_clients=args.num_clients,
         iid=args.iid,
-        alpha=args.alpha,
-        data_seed=args.data_seed
+        alpha=args.alpha
     )
     
     # Create client
