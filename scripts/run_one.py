@@ -84,7 +84,6 @@ def wait_pods_ready(namespace: str, label: str, timeout: int = 180) -> bool:
 
 
 def apply_network_profile(profile: str, namespace: str, run_id: str):
-def apply_network_profile(profile: str, namespace: str, run_id: str):
     """Apply tc/netem network emulation profile to current run client pods only"""
     if profile == "NET0":
         # No network constraints (baseline)
