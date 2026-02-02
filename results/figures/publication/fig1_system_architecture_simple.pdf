@@ -1,0 +1,124 @@
+%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 400 250]
+/Contents 4 0 R
+>>
+endobj
+
+4 0 obj
+<<
+/Length 450
+>>
+stream
+BT
+/F1 12 Tf
+50 200 Td
+(ZeroTrust-FLBench Architecture) Tj
+ET
+
+% FL Server box
+60 150 120 40 re
+S
+BT
+/F1 10 Tf
+95 165 Td
+(FL Server) Tj
+85 155 Td
+(Aggregator) Tj
+ET
+
+% Client boxes
+20 80 60 30 re
+S
+BT
+/F1 9 Tf
+35 90 Td
+(Client 1) Tj
+ET
+
+20 40 60 30 re
+S
+BT
+/F1 9 Tf
+35 50 Td
+(Client 2) Tj
+ET
+
+% Security configs
+250 180 80 25 re
+S
+BT
+/F1 8 Tf
+265 190 Td
+(SEC0: Baseline) Tj
+ET
+
+250 150 80 25 re
+S
+BT
+/F1 8 Tf
+260 160 Td
+(SEC1: NetworkPolicy) Tj
+ET
+
+250 120 80 25 re
+S
+BT
+/F1 8 Tf
+270 130 Td
+(SEC2: mTLS) Tj
+ET
+
+250 90 80 25 re
+S
+BT
+/F1 8 Tf
+265 100 Td
+(SEC3: Combined) Tj
+ET
+
+% Network profiles
+60 20 100 20 re
+S
+BT
+/F1 8 Tf
+75 27 Td
+(NET0: Baseline, NET2: 50ms) Tj
+ET
+
+endstream
+endobj
+
+xref
+0 5
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000201 00000 n 
+trailer
+<<
+/Size 5
+/Root 1 0 R
+>>
+startxref
+703
+%%EOF
