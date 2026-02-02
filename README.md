@@ -2,6 +2,46 @@
 
 **Design-space evaluation of Network Isolation + mTLS/Service Mesh for Federated Learning on Edge Kubernetes**
 
+## 🚀 Quick Start (Post Bug-Fix)
+
+**Status:** ✅ All 4 critical bugs fixed ([see BUGFIX_SUMMARY.md](BUGFIX_SUMMARY.md))
+
+### Prerequisites
+- Docker Desktop or Minikube
+- kubectl
+- Python 3.9+
+
+### Run Baseline Experiment (5 minutes)
+```bash
+# 1. Build image
+docker build -t zerotrust-flbench:latest .
+
+# 2. Start minikube
+minikube start --cpus=4 --memory=8192
+
+# 3. Load image into minikube
+minikube image load zerotrust-flbench:latest
+
+# 4. Validate data splits (optional but recommended)
+python3 scripts/validate_splits.py --num-clients 5 --data-seed 42
+
+# 5. Run single experiment (SEC0 + NET0 baseline)
+./scripts/run_one.py \
+  --sec-level SEC0 \
+  --net-profile NET0 \
+  --num-clients 5 \
+  --num-rounds 10 \
+  --iid \
+  --data-seed 42
+
+# 6. Check results
+ls -lh results/logs/
+jq 'select(.event == "round_complete") | {round: .round, test_acc: .test_accuracy}' \
+  results/logs/server_SEC0_NET0_*.log
+```
+
+---
+
 ## Overview
 
 This project evaluates the impact of Zero-Trust security mechanisms (NetworkPolicy + mTLS/service mesh) on Federated Learning (FL) performance in edge/cloud Kubernetes environments. It measures:
