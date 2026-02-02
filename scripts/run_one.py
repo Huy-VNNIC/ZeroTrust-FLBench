@@ -167,17 +167,17 @@ def inject_run_id(manifest_path: Path, run_id: str, output_path: Path, num_round
     if is_iid is not None and is_iid:
         # For client Jobs, add --iid flag
         content = content.replace(
-            '- "--server-address=fl-server:8080"',
-            '- "--server-address=fl-server:8080"\n          - "--iid"'
+            f'- "--server-address=fl-server-{run_id}:8080"',
+            f'- "--server-address=fl-server-{run_id}:8080"\n          - "--iid"'
         )
     
     # Inject data_seed if provided (for clients)
     if data_seed is not None:
         # Add after server-address for clients
-        if '--iid' not in content.replace('- "--server-address=fl-server:8080"', ''):
+        if '--iid' not in content.replace(f'- "--server-address=fl-server-{run_id}:8080"', ''):
             content = content.replace(
-                '- "--server-address=fl-server:8080"',
-                f'- "--server-address=fl-server:8080"\n          - "--data-seed={data_seed}"'
+                f'- "--server-address=fl-server-{run_id}:8080"',
+                f'- "--server-address=fl-server-{run_id}:8080"\n          - "--data-seed={data_seed}"'
             )
         else:
             content = content.replace(
@@ -500,8 +500,8 @@ def main():
     
     args = parser.parse_args()
     
-    # Generate unique RUN_ID
-    run_id = f"{args.sec_level}_{args.net_profile}_{int(time.time())}"
+    # Generate unique RUN_ID (Kubernetes DNS compliant: lowercase, hyphens only)
+    run_id = f"{args.sec_level.lower()}-{args.net_profile.lower()}-{int(time.time())}"
     
     log_event(
         "experiment_start",
