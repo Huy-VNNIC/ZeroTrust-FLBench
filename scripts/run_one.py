@@ -65,38 +65,84 @@ def run_command(cmd: list, check=True, capture_output=True):
         raise
 
 
-def apply_network_profile(profile: str, namespace: str):
-    """Apply tc/netem network emulation profile"""
+def wait_pods_ready(namespace: str, label: str, timeout: int = 180) -> bool:
+    """Wait for pods to be Ready with kubectl wait"""
+    log_event("wait_pods_ready_start", namespace=namespace, label=label, timeout_sec=timeout)
+    
+    result = run_command([
+        "kubectl", "wait",
+        "--for=condition=Ready",
+        "pod",
+        "-n", namespace,
+        "-l", label,
+        f"--timeout={timeout}s"
+    ], check=False)
+    
+    success = result.returncode == 0
+    log_event("wait_pods_ready_end", namespace=namespace, label=label, success=success)
+    return success
+
+
+def apply_network_profile(profile: str, namespace: str, run_id: str):
+def apply_network_profile(profile: str, namespace: str, run_id: str):
+    """Apply tc/netem network emulation profile to current run client pods only"""
     if profile == "NET0":
         # No network constraints (baseline)
         log_event("network_profile_skip", profile=profile, reason="baseline")
         return
     
-    # Get all client pods
+    # ✅ Only target pods from current run (avoid old terminating pods)
+    selector = f"app=fl-client,run-id={run_id}"
+    
+    # ✅ Wait until client pods are Ready (critical for kubectl exec)
+    log_event("network_profile_wait_ready", profile=profile, selector=selector)
+    if not wait_pods_ready(namespace, selector, timeout=180):
+        log_event("network_profile_failed", profile=profile, reason="pods_not_ready", selector=selector)
+        raise RuntimeError(f"Client pods not Ready for run {run_id} before netem apply")
+    
+    # Get ready pods for this specific run
     result = run_command([
         "kubectl", "get", "pods",
         "-n", namespace,
-        "-l", "app=fl-client",
+        "-l", selector,
         "-o", "jsonpath={.items[*].metadata.name}"
-    ])
+    ], check=False)
     
     pods = result.stdout.strip().split()
-    
     if not pods:
-        log_event("network_profile_skip", profile=profile, reason="no_pods")
-        return
+        log_event("network_profile_failed", profile=profile, reason="no_pods_after_ready", selector=selector)
+        raise RuntimeError(f"No client pods found for run {run_id}")
     
-    # Apply netem rules based on profile
+    log_event("network_profile_apply_start", profile=profile, run_id=run_id, pods=pods)
+    
+    # Apply netem with retry logic (kubectl exec can be flaky)
     netem_script = Path(__file__).parent / "netem_apply.sh"
     
     for pod in pods:
-        log_event("network_profile_apply", profile=profile, pod=pod, namespace=namespace)
-        run_command([
-            str(netem_script),
-            namespace,
-            pod,
-            profile
-        ])
+        success = False
+        for attempt in range(1, 6):  # Retry up to 5 times
+            log_event("network_profile_apply_try", profile=profile, pod=pod, attempt=attempt)
+            result = run_command([
+                str(netem_script),
+                namespace,
+                pod,
+                profile
+            ], check=False)
+            
+            if result.returncode == 0:
+                success = True
+                log_event("network_profile_apply_success", profile=profile, pod=pod, attempt=attempt)
+                break
+            else:
+                log_event("network_profile_apply_retry", profile=profile, pod=pod, attempt=attempt, 
+                         returncode=result.returncode, stderr=result.stderr)
+                time.sleep(2)  # Brief wait before retry
+        
+        if not success:
+            log_event("network_profile_apply_failed", profile=profile, pod=pod, run_id=run_id)
+            raise RuntimeError(f"netem apply failed for pod {pod} after 5 attempts")
+    
+    log_event("network_profile_apply_complete", profile=profile, run_id=run_id, pod_count=len(pods))
 
 
 def inject_run_id(manifest_path: Path, run_id: str, output_path: Path, num_rounds: int = None, 
@@ -361,6 +407,38 @@ def cleanup(namespace: str, run_id: str):
     log_event("cleanup_end", namespace=namespace, run_id=run_id)
 
 
+def collect_debug_info(namespace: str, run_id: str, output_dir: Path):
+    """Collect debug info when experiment fails"""
+    debug_file = output_dir / "debug.txt"
+    
+    try:
+        with open(debug_file, 'w') as f:
+            f.write(f"=== DEBUG INFO FOR {run_id} ===\n\n")
+            
+            # Pod status
+            f.write("=== POD STATUS ===\n")
+            result = run_command(["kubectl", "get", "pods", "-n", namespace, "-o", "wide"], check=False)
+            f.write(result.stdout + "\n\n")
+            
+            # Jobs status  
+            f.write("=== JOBS STATUS ===\n")
+            result = run_command(["kubectl", "get", "jobs", "-n", namespace, "-o", "yaml"], check=False)
+            f.write(result.stdout[:2000] + "\n\n")  # Limit output
+            
+            # Recent events
+            f.write("=== RECENT EVENTS ===\n")
+            result = run_command([
+                "kubectl", "get", "events", "-n", namespace, 
+                "--sort-by=.lastTimestamp"
+            ], check=False)
+            lines = result.stdout.split('\n')
+            f.write('\n'.join(lines[-30:]) + "\n")  # Last 30 events
+        
+        log_event("debug_collected", file=str(debug_file))
+    except Exception as e:
+        log_event("debug_collection_failed", error=str(e))
+
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -473,13 +551,20 @@ def main():
             cleanup("fl-experiment", run_id)
             sys.exit(1)
         
-        # Apply network profile (after server ready, before clients start training)
+        # Apply network profile (after server ready, before completion check)
         time.sleep(10)  # Let clients spawn
-        apply_network_profile(args.net_profile, "fl-experiment")
+        apply_network_profile(args.net_profile, "fl-experiment", run_id)
         
-        # Wait for completion
-        if not wait_for_completion("fl-experiment", run_id, timeout=3600):
-            log_event("experiment_failed", reason="completion_timeout")
+        # Wait for completion with dynamic timeout based on network profile
+        timeout = 7200 if args.net_profile == "NET2" else 3600  # 2h for NET2, 1h for others
+        if not wait_for_completion("fl-experiment", run_id, timeout=timeout):
+            log_event("experiment_failed", reason="completion_timeout", timeout_sec=timeout)
+            
+            # Collect debug info before cleanup
+            debug_dir = args.output_dir / run_id
+            debug_dir.mkdir(parents=True, exist_ok=True)
+            collect_debug_info("fl-experiment", run_id, debug_dir)
+            
             collect_logs("fl-experiment", run_id, args.output_dir)
             cleanup("fl-experiment", run_id)
             sys.exit(1)
@@ -507,6 +592,15 @@ def main():
         
     except Exception as e:
         log_event("experiment_error", error=str(e), run_id=run_id)
+        
+        # Collect debug info
+        try:
+            debug_dir = args.output_dir / run_id
+            debug_dir.mkdir(parents=True, exist_ok=True)
+            collect_debug_info("fl-experiment", run_id, debug_dir)
+        except:
+            pass
+        
         # Clean up temp file before calling cleanup
         try:
             temp_manifest = Path(f"/tmp/fl-deployment-{run_id}.yaml")
