@@ -61,40 +61,23 @@ def wait_for_cluster_ready():
     return True
 
 
-def cleanup_namespace():
-    """Clean up experiment namespace"""
-    print("🧹 Cleaning up namespace...")
-    
-    # Delete namespace (this removes all resources)
-    subprocess.run(
-        ["kubectl", "delete", "namespace", "fl-experiment", "--ignore-not-found=true"],
+def ensure_namespace():
+    """Ensure namespace exists (create if needed)"""
+    result = subprocess.run(
+        ["kubectl", "get", "namespace", "fl-experiment"],
         capture_output=True
     )
     
-    # Wait for namespace to fully terminate (can take 30-60s)
-    print("⏳ Waiting for namespace termination...")
-    max_wait = 120  # 2 minutes max
-    start = time.time()
-    while time.time() - start < max_wait:
-        result = subprocess.run(
-            ["kubectl", "get", "namespace", "fl-experiment"],
-            capture_output=True,
-            text=True
+    if result.returncode != 0:
+        # Namespace doesn't exist, create it
+        print("🔧 Creating namespace fl-experiment...")
+        subprocess.run(
+            ["kubectl", "create", "namespace", "fl-experiment"],
+            capture_output=True
         )
-        if result.returncode != 0:  # Namespace doesn't exist anymore
-            break
-        time.sleep(5)
-    
-    # Extra buffer to ensure everything is cleaned
-    time.sleep(10)
-    
-    # Recreate namespace
-    subprocess.run(
-        ["kubectl", "create", "namespace", "fl-experiment"],
-        capture_output=True
-    )
-    
-    print("✅ Namespace cleaned")
+        print("✅ Namespace created")
+    else:
+        print("✅ Namespace fl-experiment already exists")
 
 
 def reset_network():
@@ -116,8 +99,8 @@ def run_single_experiment(workload, data_dist, num_clients, net_profile, sec_con
     print(f"   Config: {workload} {data_dist} {num_clients}c {net_profile} {sec_config} seed={seed}")
     print("="*80)
     
-    # Step 1: Cleanup
-    cleanup_namespace()
+    # Step 1: Ensure namespace exists
+    ensure_namespace()
     
     # Step 2: Reset network
     reset_network()

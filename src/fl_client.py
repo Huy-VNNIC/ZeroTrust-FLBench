@@ -372,7 +372,7 @@ def main():
     parser.add_argument("--client-id", type=int, required=True)
     parser.add_argument("--num-clients", type=int, default=5)
     parser.add_argument("--server-address", type=str, default="fl-server:8080")
-    parser.add_argument("--iid", action="store_true", default=True)
+    parser.add_argument("--iid", action="store_true", help="Use IID data split")
     parser.add_argument("--alpha", type=float, default=0.5)
     parser.add_argument("--data-seed", type=int, default=42, help="Shared seed for data partitioning")
     parser.add_argument("--train-seed", type=int, default=None, help="Client-specific training seed")

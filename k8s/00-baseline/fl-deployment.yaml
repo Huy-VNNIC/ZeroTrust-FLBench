@@ -15,6 +15,7 @@ metadata:
   namespace: fl-experiment
   labels:
     app: fl-server
+    run-id: "PLACEHOLDER"
 spec:
   type: ClusterIP
   ports:
@@ -33,6 +34,7 @@ metadata:
   namespace: fl-experiment
   labels:
     app: fl-server
+    run-id: "PLACEHOLDER"
 spec:
   replicas: 1
   selector:
@@ -85,6 +87,7 @@ metadata:
   labels:
     app: fl-client
     client-id: "1"
+    run-id: "PLACEHOLDER"
 spec:
   backoffLimit: 0
   template:
@@ -134,6 +137,7 @@ metadata:
   labels:
     app: fl-client
     client-id: "2"
+    run-id: "PLACEHOLDER"
 spec:
   backoffLimit: 0
   template:
@@ -183,6 +187,7 @@ metadata:
   labels:
     app: fl-client
     client-id: "3"
+    run-id: "PLACEHOLDER"
 spec:
   backoffLimit: 0
   template:
@@ -232,6 +237,7 @@ metadata:
   labels:
     app: fl-client
     client-id: "4"
+    run-id: "PLACEHOLDER"
 spec:
   backoffLimit: 0
   template:
@@ -281,6 +287,7 @@ metadata:
   labels:
     app: fl-client
     client-id: "5"
+    run-id: "PLACEHOLDER"
 spec:
   backoffLimit: 0
   template:

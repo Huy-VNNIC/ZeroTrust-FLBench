@@ -178,30 +178,39 @@ def wait_for_server_ready(namespace: str, timeout: int = 300):
     return False
 
 
-def wait_for_completion(namespace: str, timeout: int = 3600):
+def wait_for_completion(namespace: str, run_id: str, timeout: int = 3600):
     """Wait for all client jobs to complete"""
-    log_event("wait_completion_start", namespace=namespace, timeout_sec=timeout)
+    log_event("wait_completion_start", namespace=namespace, run_id=run_id, timeout_sec=timeout)
     start = time.time()
     
+    # Wait a bit for jobs to be created
+    time.sleep(3)
+    
     while time.time() - start < timeout:
-        # Check all client jobs
+        # Check all client jobs for this specific run
         result = run_command([
             "kubectl", "get", "jobs",
             "-n", namespace,
-            "-l", "app=fl-client",
+            "-l", f"run-id={run_id}",
             "-o", "json"
-        ])
+        ], check=False)
         
-        jobs_data = json.loads(result.stdout)
+        if result.returncode != 0:
+            time.sleep(5)
+            continue
         
-        if not jobs_data.get("items"):
-            log_event("wait_completion_no_jobs", namespace=namespace)
-            return False
+        jobs_data = json.loads(result.stdout or "{}")
+        items = jobs_data.get("items", [])
+        
+        if not items:
+            # Jobs not created yet, wait
+            time.sleep(5)
+            continue
         
         all_complete = True
         failed = False
         
-        for job in jobs_data["items"]:
+        for job in items:
             status = job.get("status", {})
             succeeded = status.get("succeeded", 0)
             failed_count = status.get("failed", 0)
@@ -217,43 +226,39 @@ def wait_for_completion(namespace: str, timeout: int = 3600):
                 all_complete = False
         
         if failed:
-            log_event("wait_completion_failed", namespace=namespace)
+            log_event("wait_completion_failed", namespace=namespace, run_id=run_id)
             return False
         
         if all_complete:
             duration = time.time() - start
-            log_event("wait_completion_success", namespace=namespace, duration_sec=duration)
+            log_event("wait_completion_success", namespace=namespace, run_id=run_id, duration_sec=duration)
             return True
         
         time.sleep(5)
     
-    log_event("wait_completion_timeout", namespace=namespace, timeout_sec=timeout)
+    log_event("wait_completion_timeout", namespace=namespace, run_id=run_id, timeout_sec=timeout)
     return False
 
 
 def collect_logs(namespace: str, run_id: str, output_dir: Path):
-    """Collect logs from server and all clients"""
+    """Collect logs from server and all clients for this specific run"""
     log_event("logs_collect_start", namespace=namespace, run_id=run_id)
     
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    # Server logs
+    # Server logs (filter by run-id)
     log_event("logs_collect_server", namespace=namespace)
     result = run_command([
         "kubectl", "get", "pods",
         "-n", namespace,
-        "-l", "app=fl-server",
+        "-l", f"run-id={run_id},app=fl-server",
         "-o", "jsonpath={.items[0].metadata.name}"
-    ])
+    ], check=False)
     
     server_pod = result.stdout.strip()
     if server_pod:
         server_log = output_dir / f"server_{run_id}.log"
         with open(server_log, 'w') as f:
-            run_command(
-                ["kubectl", "logs", "-n", namespace, server_pod],
-                check=False
-            ).stdout
             subprocess.run(
                 ["kubectl", "logs", "-n", namespace, server_pod],
                 stdout=f,
@@ -262,16 +267,18 @@ def collect_logs(namespace: str, run_id: str, output_dir: Path):
             )
         log_event("logs_collected_server", file=str(server_log))
     
-    # Client logs
+    # Client logs (filter by run-id)
     result = run_command([
         "kubectl", "get", "pods",
         "-n", namespace,
-        "-l", "app=fl-client",
+        "-l", f"run-id={run_id},app=fl-client",
         "-o", "jsonpath={.items[*].metadata.name}"
-    ])
+    ], check=False)
     
     client_pods = result.stdout.strip().split()
     for pod in client_pods:
+        if not pod:  # Skip empty strings
+            continue
         client_log = output_dir / f"{pod}_{run_id}.log"
         with open(client_log, 'w') as f:
             subprocess.run(
@@ -325,36 +332,34 @@ def save_metadata(output_dir: Path, run_id: str, config: dict):
     log_event("metadata_saved", file=str(meta_file))
 
 
-def cleanup(namespace: str, keep_namespace: bool = False):
-    """Delete resources (optionally keep namespace)"""
-    log_event("cleanup_start", namespace=namespace, keep_namespace=keep_namespace)
+def cleanup(namespace: str, run_id: str):
+    """Delete resources for this specific run (by run-id), keep namespace"""
+    log_event("cleanup_start", namespace=namespace, run_id=run_id)
     
-    # Delete all jobs and deployments
+    # Delete only resources with this run-id
     run_command(
-        ["kubectl", "delete", "jobs,deployments,services", "-n", namespace, "--all"],
+        ["kubectl", "delete", "jobs,deployments,services", 
+         "-n", namespace, "-l", f"run-id={run_id}"],
         check=False
     )
     
-    if not keep_namespace:
-        run_command(["kubectl", "delete", "namespace", namespace], check=False)
-        
-        # Wait for namespace to fully terminate (critical for next experiment)
-        import time
-        max_wait = 120  # 2 minutes
-        start = time.time()
-        while time.time() - start < max_wait:
-            result = run_command(
-                ["kubectl", "get", "namespace", namespace],
-                check=False
-            )
-            if result.returncode != 0:  # Namespace gone
-                break
-            time.sleep(5)
-        
-        # Extra buffer
-        time.sleep(5)
+    # Wait for pods to fully terminate
+    import time
+    max_wait = 60
+    start = time.time()
+    while time.time() - start < max_wait:
+        result = run_command(
+            ["kubectl", "get", "pods", "-n", namespace, 
+             "-l", f"run-id={run_id}",
+             "-o", "jsonpath={.items[*].metadata.name}"],
+            check=False
+        )
+        if not result.stdout.strip():
+            break
+        time.sleep(3)
     
-    log_event("cleanup_end", namespace=namespace)
+    log_event("cleanup_end", namespace=namespace, run_id=run_id)
+
 
 
 def main():
@@ -465,7 +470,7 @@ def main():
         # Wait for server to be ready
         if not wait_for_server_ready("fl-experiment", timeout=300):
             log_event("experiment_failed", reason="server_not_ready")
-            cleanup("fl-experiment", args.keep_namespace)
+            cleanup("fl-experiment", run_id)
             sys.exit(1)
         
         # Apply network profile (after server ready, before clients start training)
@@ -473,10 +478,10 @@ def main():
         apply_network_profile(args.net_profile, "fl-experiment")
         
         # Wait for completion
-        if not wait_for_completion("fl-experiment", timeout=3600):
+        if not wait_for_completion("fl-experiment", run_id, timeout=3600):
             log_event("experiment_failed", reason="completion_timeout")
             collect_logs("fl-experiment", run_id, args.output_dir)
-            cleanup("fl-experiment", args.keep_namespace)
+            cleanup("fl-experiment", run_id)
             sys.exit(1)
         
         # Collect logs
@@ -496,7 +501,7 @@ def main():
         save_metadata(output_dir_run, run_id, config_dict)
         
         # Cleanup
-        cleanup("fl-experiment", args.keep_namespace)
+        cleanup("fl-experiment", run_id)
         
         log_event("experiment_success", run_id=run_id)
         
@@ -509,7 +514,7 @@ def main():
                 temp_manifest.unlink()
         except:
             pass
-        cleanup("fl-experiment", args.keep_namespace)
+        cleanup("fl-experiment", run_id)
         sys.exit(1)
     finally:
         # Remove temp manifest (if still exists)
