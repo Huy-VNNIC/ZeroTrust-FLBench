@@ -38,7 +38,7 @@ def generate_latex_table_summary(summary_df: pd.DataFrame, output_path: Path):
                     'p95 (s)': f'{df_filtered["p95_round"].mean():.2f}',
                     'p99 (s)': f'{df_filtered["p99_round"].mean():.2f}',
                     'TTA-95 (s)': f'{df_filtered["tta_95"].mean():.1f}' if df_filtered["tta_95"].notna().any() else 'N/A',
-                    'Failure (\%)': f'{df_filtered["failure_rate"].mean()*100:.2f}',
+                    'Failure (%)': f'{df_filtered["failure_rate"].mean()*100:.2f}',
                 })
     
     df_table = pd.DataFrame(metrics)
@@ -55,7 +55,8 @@ Config & p50 & p95 & p99 & TTA-95 & Failure \\
 """
     
     for _, row in df_table.iterrows():
-        latex += f"{row['Config']} & {row['p50 (s)']} & {row['p95 (s)']} & {row['p99 (s)']} & {row['TTA-95 (s)']} & {row['Failure (\%)']} \\\\\n"
+        failure_pct = row['Failure (%)']
+        latex += f"{row['Config']} & {row['p50 (s)']} & {row['p95 (s)']} & {row['p99 (s)']} & {row['TTA-95 (s)']} & {failure_pct} \\\\\n"
     
     latex += r"""\bottomrule
 \end{tabular}

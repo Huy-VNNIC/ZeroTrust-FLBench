@@ -51,8 +51,7 @@ spec:
         command: ["python", "/app/src/fl_server.py"]
         args:
           - "--num-rounds=10"
-          - "--min-fit-clients=5"
-          - "--min-available-clients=5"
+          - "--min-clients=5"
           - "--fraction-fit=1.0"
           - "--server-address=0.0.0.0:8080"
         ports:
