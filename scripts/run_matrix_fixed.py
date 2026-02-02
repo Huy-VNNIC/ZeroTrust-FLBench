@@ -71,8 +71,22 @@ def cleanup_namespace():
         capture_output=True
     )
     
-    # Wait for deletion
-    time.sleep(20)
+    # Wait for namespace to fully terminate (can take 30-60s)
+    print("⏳ Waiting for namespace termination...")
+    max_wait = 120  # 2 minutes max
+    start = time.time()
+    while time.time() - start < max_wait:
+        result = subprocess.run(
+            ["kubectl", "get", "namespace", "fl-experiment"],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode != 0:  # Namespace doesn't exist anymore
+            break
+        time.sleep(5)
+    
+    # Extra buffer to ensure everything is cleaned
+    time.sleep(10)
     
     # Recreate namespace
     subprocess.run(
