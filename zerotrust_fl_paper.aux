@@ -17,6 +17,7 @@
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
 \citation{mcmahan2017communication}
+\citation{kairouz2021advances}
 \citation{li2020federated,zhang2024federated}
 \citation{rose2020zero}
 \citation{wang2024zerotrust}
@@ -26,17 +27,24 @@
 \citation{bonawitz2017practical}
 \citation{yin2018byzantine}
 \citation{zhang2024federated}
-\citation{liu2025secure}
+\citation{jiang2024kubeflower}
+\citation{kubefate}
 \@writefile{toc}{\contentsline {section}{\numberline {I}Introduction}{1}{section.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {II}Related Work}{1}{section.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-A}}Federated Learning Security}{1}{subsection.2.1}\protected@file@percent }
+\citation{liu2025secure}
 \citation{rose2020zero}
 \citation{kumar2024kubernetes}
 \citation{anderson2024mtls}
+\citation{yu2021ambient}
 \citation{wang2024zerotrust}
+\citation{istio_security}
+\citation{linkerd_mtls}
 \citation{caldas2018leaf}
 \citation{he2020fedml}
 \citation{zhang2024federated}
+\citation{kubernetes_networkpolicy}
+\citation{linkerd_mtls}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-B}}Zero Trust Architecture}{2}{subsection.2.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-C}}FL Performance Evaluation}{2}{subsection.2.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {III}System Design}{2}{section.3}\protected@file@percent }
@@ -45,7 +53,8 @@
 \@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces ZeroTrust-FLBench System Architecture. The framework consists of FL clients connecting to a Kubernetes cluster containing the FL server and client pods. Security configurations range from baseline (SEC0) to combined NetworkPolicy and mTLS (SEC3). Network profiles emulate different latency conditions using tc-netem: NET0 (no impairment, <1ms), NET2 (80ms ± 20ms jitter one-way delay).}}{2}{figure.1}\protected@file@percent }
 \newlabel{fig:system_overview}{{1}{2}{ZeroTrust-FLBench System Architecture. The framework consists of FL clients connecting to a Kubernetes cluster containing the FL server and client pods. Security configurations range from baseline (SEC0) to combined NetworkPolicy and mTLS (SEC3). Network profiles emulate different latency conditions using tc-netem: NET0 (no impairment, <1ms), NET2 (80ms ± 20ms jitter one-way delay)}{figure.1}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-C}}Security Configurations}{2}{subsection.3.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-D}}Network Profile Emulation}{2}{subsection.3.4}\protected@file@percent }
+\citation{netem_manpage}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-D}}Network Profile Emulation}{3}{subsection.3.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-E}}Data Distribution Scenarios}{3}{subsection.3.5}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {IV}Experimental Methodology}{3}{section.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-A}}Experimental Matrix}{3}{subsection.4.1}\protected@file@percent }
@@ -55,42 +64,41 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-A}}Overall Experimental Results}{3}{subsection.5.1}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces Experiment Success Matrix: Network Profile × Security Configuration}}{3}{table.1}\protected@file@percent }
 \newlabel{tab:success_matrix}{{I}{3}{Experiment Success Matrix: Network Profile × Security Configuration}{table.1}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {II}{\ignorespaces Experimental Configuration Completion Statistics}}{3}{table.2}\protected@file@percent }
-\newlabel{tab:success_rates}{{II}{3}{Experimental Configuration Completion Statistics}{table.2}{}}
-\citation{anderson2024mtls}
-\citation{wang2024zerotrust}
+\@writefile{lot}{\contentsline {table}{\numberline {II}{\ignorespaces Experimental Configuration Completion Statistics}}{4}{table.2}\protected@file@percent }
+\newlabel{tab:success_rates}{{II}{4}{Experimental Configuration Completion Statistics}{table.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-B}}Performance Overhead Analysis}{4}{subsection.5.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-C}}Interaction Effects Analysis}{4}{subsection.5.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {III}{\ignorespaces Round duration statistics (mean ± 95\% CI over n=10 independent runs per configuration). Confidence intervals computed via bootstrap resampling (1000 iterations) to avoid distributional assumptions with small sample sizes.}}{4}{table.3}\protected@file@percent }
+\newlabel{tab:round_duration}{{III}{4}{Round duration statistics (mean ± 95\% CI over n=10 independent runs per configuration). Confidence intervals computed via bootstrap resampling (1000 iterations) to avoid distributional assumptions with small sample sizes}{table.3}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-D}}Performance Latency Analysis}{4}{subsection.5.4}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {III}{\ignorespaces Round duration statistics (mean ± 95\% CI over runs)}}{4}{table.3}\protected@file@percent }
-\newlabel{tab:round_duration}{{III}{4}{Round duration statistics (mean ± 95\% CI over runs)}{table.3}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-E}}Time to Accuracy Analysis}{4}{subsection.5.5}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-F}}Convergence Behavior Analysis}{4}{subsection.5.6}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-G}}Failure Analysis}{4}{subsection.5.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {VI}Discussion}{4}{section.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-A}}Security-Performance Trade-offs}{4}{subsection.6.1}\protected@file@percent }
+\citation{anderson2024mtls}
+\citation{wang2024zerotrust}
 \@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Performance overhead interaction effects between Network and Security configurations. (a) P99 round latency shows combined impact of network constraints and security controls, with SEC3+NET2 experiencing highest overhead (SEC3: mTLS+NetworkPolicy). (b) Time-to-Accuracy (TTA) demonstrates that security overhead compounds with network latency. (c) Per-round failure rates remain low (<2\%) across all configurations, confirming system stability. Error bars represent mean values across n=10 runs per cell (2 data distributions × 5 seeds). \textbf  {Key finding:} Network emulation (NET2: 80ms ± 20ms one-way delay) introduces 34\% overhead, while full Zero Trust (SEC3) adds 41.5\% overhead at baseline network—effects are roughly additive rather than multiplicative.}}{5}{figure.2}\protected@file@percent }
 \newlabel{fig:performance_overhead}{{2}{5}{Performance overhead interaction effects between Network and Security configurations. (a) P99 round latency shows combined impact of network constraints and security controls, with SEC3+NET2 experiencing highest overhead (SEC3: mTLS+NetworkPolicy). (b) Time-to-Accuracy (TTA) demonstrates that security overhead compounds with network latency. (c) Per-round failure rates remain low (<2\%) across all configurations, confirming system stability. Error bars represent mean values across n=10 runs per cell (2 data distributions × 5 seeds). \textbf {Key finding:} Network emulation (NET2: 80ms ± 20ms one-way delay) introduces 34\% overhead, while full Zero Trust (SEC3) adds 41.5\% overhead at baseline network—effects are roughly additive rather than multiplicative}{figure.2}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Heatmap of experiment success counts across network and security configuration combinations.}}{5}{figure.3}\protected@file@percent }
 \newlabel{fig:success_matrix}{{3}{5}{Heatmap of experiment success counts across network and security configuration combinations}{figure.3}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces P99 latency heatmap comparing IID and Non-IID data distributions across network and security configurations.}}{5}{figure.4}\protected@file@percent }
 \newlabel{fig:latency_heatmap}{{4}{5}{P99 latency heatmap comparing IID and Non-IID data distributions across network and security configurations}{figure.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {VI}Discussion}{5}{section.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-A}}Security-Performance Trade-offs}{5}{subsection.6.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-B}}Practical Implications}{5}{subsection.6.2}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Empirical Cumulative Distribution Function of round duration for NET0 (local, <1ms RTT) and NET2 (WAN, 80ms ± 20ms jitter one-way) under security configurations SEC0-SEC3. Curves show pooled samples across runs for visualization; vertical dashed lines mark mean p99 latency computed from per-run statistics (n=10 independent runs per configuration). Round duration measured as wall-clock time from round initiation to completion. See Table\nobreakspace  {}\ref  {tab:round_duration} for detailed statistics with confidence intervals.}}{6}{figure.5}\protected@file@percent }
-\newlabel{fig:latency_ecdf}{{5}{6}{Empirical Cumulative Distribution Function of round duration for NET0 (local, <1ms RTT) and NET2 (WAN, 80ms ± 20ms jitter one-way) under security configurations SEC0-SEC3. Curves show pooled samples across runs for visualization; vertical dashed lines mark mean p99 latency computed from per-run statistics (n=10 independent runs per configuration). Round duration measured as wall-clock time from round initiation to completion. See Table~\ref {tab:round_duration} for detailed statistics with confidence intervals}{figure.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Empirical Cumulative Distribution Function of round duration for NET0 (local) and NET2 (WAN, 80ms ± 20ms jitter) under security configurations SEC0-SEC3. Curves aggregate samples for visualization; vertical dashed lines mark per-configuration p99 latency. Round duration measured as server-side wall-clock time from round initiation to completion. Statistical analysis uses per-run aggregates (n=10 independent runs); see Table\nobreakspace  {}\ref  {tab:round_duration}.}}{6}{figure.5}\protected@file@percent }
+\newlabel{fig:latency_ecdf}{{5}{6}{Empirical Cumulative Distribution Function of round duration for NET0 (local) and NET2 (WAN, 80ms ± 20ms jitter) under security configurations SEC0-SEC3. Curves aggregate samples for visualization; vertical dashed lines mark per-configuration p99 latency. Round duration measured as server-side wall-clock time from round initiation to completion. Statistical analysis uses per-run aggregates (n=10 independent runs); see Table~\ref {tab:round_duration}}{figure.5}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Time to 95\% accuracy comparison across security configurations and network profiles, with error bars showing 95\% confidence intervals.}}{6}{figure.6}\protected@file@percent }
 \newlabel{fig:tta_comparison}{{6}{6}{Time to 95\% accuracy comparison across security configurations and network profiles, with error bars showing 95\% confidence intervals}{figure.6}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-C}}Limitations and Future Work}{6}{subsection.6.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {VII}Conclusion}{6}{section.7}\protected@file@percent }
-\bibcite{mcmahan2017communication}{1}
-\bibcite{li2020federated}{2}
-\bibcite{rose2020zero}{3}
-\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Test accuracy convergence over 50 training rounds. Rows show IID (top) and Non-IID (bottom) data distributions; columns show NET0 (local, <1ms RTT) and NET2 (WAN, 80ms ± 20ms jitter one-way). Lines represent mean accuracy over independent runs; shaded regions show 95\% bootstrap confidence intervals (1000 resamples over runs). Dashed horizontal line marks 95\% accuracy threshold. Security configurations (SEC0-SEC3) achieve similar final accuracy despite varying round durations, indicating Zero Trust controls affect system efficiency but not learning effectiveness.}}{7}{figure.7}\protected@file@percent }
-\newlabel{fig:accuracy_convergence}{{7}{7}{Test accuracy convergence over 50 training rounds. Rows show IID (top) and Non-IID (bottom) data distributions; columns show NET0 (local, <1ms RTT) and NET2 (WAN, 80ms ± 20ms jitter one-way). Lines represent mean accuracy over independent runs; shaded regions show 95\% bootstrap confidence intervals (1000 resamples over runs). Dashed horizontal line marks 95\% accuracy threshold. Security configurations (SEC0-SEC3) achieve similar final accuracy despite varying round durations, indicating Zero Trust controls affect system efficiency but not learning effectiveness}{figure.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Test accuracy convergence over 50 training rounds. Rows show IID (top) and Non-IID (bottom) data distributions; columns show NET0 (local) and NET2 (WAN, 80ms ± 20ms jitter). Lines represent mean accuracy; shaded regions show 95\% bootstrap confidence intervals (1000 resamples over n=10 independent runs). Dashed line marks 95\% accuracy threshold. All security configurations achieve similar final accuracy despite varying round durations.}}{7}{figure.7}\protected@file@percent }
+\newlabel{fig:accuracy_convergence}{{7}{7}{Test accuracy convergence over 50 training rounds. Rows show IID (top) and Non-IID (bottom) data distributions; columns show NET0 (local) and NET2 (WAN, 80ms ± 20ms jitter). Lines represent mean accuracy; shaded regions show 95\% bootstrap confidence intervals (1000 resamples over n=10 independent runs). Dashed line marks 95\% accuracy threshold. All security configurations achieve similar final accuracy despite varying round durations}{figure.7}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Failure rates across different configuration combinations, highlighting the reliability impact of security and network constraints.}}{7}{figure.8}\protected@file@percent }
 \newlabel{fig:failure_rates}{{8}{7}{Failure rates across different configuration combinations, highlighting the reliability impact of security and network constraints}{figure.8}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {VIII}Acknowledgments}{7}{section.8}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{References}{7}{section*.1}\protected@file@percent }
+\bibcite{mcmahan2017communication}{1}
+\bibcite{li2020federated}{2}
+\bibcite{rose2020zero}{3}
 \bibcite{mcmahan2017learning}{4}
 \bibcite{bonawitz2017practical}{5}
 \bibcite{yin2018byzantine}{6}
@@ -100,10 +108,19 @@
 \bibcite{scott2020zero}{10}
 \bibcite{beyene2021zero}{11}
 \bibcite{caldas2018leaf}{12}
-\bibcite{he2020fedml}{13}
-\bibcite{zhang2024federated}{14}
-\bibcite{wang2024zerotrust}{15}
-\bibcite{liu2025secure}{16}
-\bibcite{kumar2024kubernetes}{17}
-\bibcite{anderson2024mtls}{18}
+\bibcite{kubernetes_networkpolicy}{13}
+\bibcite{linkerd_mtls}{14}
+\bibcite{istio_security}{15}
+\bibcite{yu2021ambient}{16}
+\bibcite{netem_manpage}{17}
+\bibcite{jiang2024kubeflower}{18}
+\bibcite{kubefate}{19}
+\bibcite{kairouz2021advances}{20}
+\bibcite{he2020fedml}{21}
+\bibcite{zhang2024federated}{22}
+\bibcite{wang2024zerotrust}{23}
+\bibcite{liu2025secure}{24}
+\bibcite{kumar2024kubernetes}{25}
+\bibcite{anderson2024mtls}{26}
+\@writefile{toc}{\contentsline {section}{References}{8}{section*.1}\protected@file@percent }
 \gdef \@abspage@last{8}

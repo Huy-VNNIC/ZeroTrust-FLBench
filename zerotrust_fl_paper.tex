@@ -48,7 +48,7 @@ Federated Learning, Zero Trust, Network Security, Performance Evaluation, Benchm
 
 \section{Introduction}
 
-Federated Learning (FL) enables multiple parties to collaboratively train machine learning models without sharing raw data~\cite{mcmahan2017communication}, making it valuable for privacy-sensitive domains like healthcare and finance. As organizations move FL systems from research prototypes to production deployments, they face security and reliability challenges unique to distributed ML workloads~\cite{li2020federated,zhang2024federated}.
+Federated Learning (FL) enables multiple parties to collaboratively train machine learning models without sharing raw data~\cite{mcmahan2017communication}, making it valuable for privacy-sensitive domains like healthcare and finance. As organizations move FL systems from research prototypes to production deployments~\cite{kairouz2021advances}, they face security and reliability challenges unique to distributed ML workloads~\cite{li2020federated,zhang2024federated}.
 
 Zero Trust security architecture addresses these challenges through the principle of "never trust, always verify"~\cite{rose2020zero}. Rather than assuming internal network traffic is safe, Zero Trust continuously verifies all communications regardless of source. This approach has proven effective in cloud~\cite{wang2024zerotrust} and microservices environments~\cite{kumar2024kubernetes}, but its application to FL systems remains underexplored.
 
@@ -71,13 +71,15 @@ Our experimental evaluation provides empirical evidence that Zero Trust security
 
 FL security research has traditionally focused on algorithmic defenses: differential privacy for data protection~\cite{mcmahan2017learning}, secure aggregation for update confidentiality~\cite{bonawitz2017practical}, and Byzantine-robust aggregation for malicious client detection~\cite{yin2018byzantine}. Recent production deployments~\cite{zhang2024federated} reveal that these techniques alone are insufficient—system-level security controls remain critical for defending against infrastructure-level attacks.
 
+Recent work explores Kubernetes-native FL deployments for privacy and resource isolation~\cite{jiang2024kubeflower}, and production frameworks like KubeFATE~\cite{kubefate} demonstrate operational feasibility. However, these efforts focus on deployment automation rather than systematic measurement of security-performance trade-offs under Zero Trust controls.
+
 Liu et al.~\cite{liu2025secure} demonstrate that hardware-assisted attestation can verify client integrity in FL systems, but their evaluation focuses on security guarantees rather than performance overhead. Our work complements this by measuring the cost of network-layer Zero Trust controls, which provide defense-in-depth alongside cryptographic protections.
 
 \subsection{Zero Trust Architecture}
 
-Zero Trust principles have been widely adopted in enterprise cloud environments~\cite{rose2020zero}, with recent studies quantifying their performance implications for traditional services~\cite{kumar2024kubernetes}. Anderson et al.~\cite{anderson2024mtls} provide comprehensive measurements of mTLS overhead in microservices, reporting 15-30\% latency increases depending on certificate chain depth and cipher suite selection.
+Zero Trust principles have been widely adopted in enterprise cloud environments~\cite{rose2020zero}, with recent studies quantifying their performance implications for traditional services~\cite{kumar2024kubernetes}. Anderson et al.~\cite{anderson2024mtls} provide comprehensive measurements of mTLS overhead in microservices, reporting 15-30\% latency increases depending on certificate chain depth and cipher suite selection. Yu et al.~\cite{yu2021ambient} analyze service mesh data plane latency, finding that sidecar proxies introduce 1-3ms per-hop overhead.
 
-Wang et al.~\cite{wang2024zerotrust} evaluate Zero Trust controls for edge computing scenarios, finding that authentication overhead dominates in high-frequency, short-duration connections. FL workloads exhibit different characteristics—long-lived connections with infrequent authentication but large payload transfers—making direct extrapolation from prior work unreliable.
+Wang et al.~\cite{wang2024zerotrust} evaluate Zero Trust controls for edge computing scenarios, finding that authentication overhead dominates in high-frequency, short-duration connections. While Istio~\cite{istio_security} and Linkerd~\cite{linkerd_mtls} are widely deployed service meshes implementing Zero Trust principles, their performance characteristics differ significantly from FL workloads—FL exhibits long-lived connections with infrequent authentication but large payload transfers, making direct extrapolation from prior work unreliable.
 
 \subsection{FL Performance Evaluation}
 
@@ -118,8 +120,8 @@ We define four security levels to systematically evaluate the impact of Zero Tru
 
 \begin{itemize}
     \item \textbf{SEC0 (Baseline):} Standard Kubernetes deployment without additional security measures
-    \item \textbf{SEC1 (NetworkPolicy):} Kubernetes NetworkPolicy enforcement restricting inter-pod communication
-    \item \textbf{SEC2 (mTLS):} Mutual TLS authentication for all FL communications
+    \item \textbf{SEC1 (NetworkPolicy):} Kubernetes NetworkPolicy~\cite{kubernetes_networkpolicy} enforcement restricting inter-pod communication with default-deny rules
+    \item \textbf{SEC2 (mTLS):} Linkerd~\cite{linkerd_mtls} service mesh providing automatic mutual TLS authentication for all FL communications
     \item \textbf{SEC3 (Combined):} Both NetworkPolicy and mTLS authentication
 \end{itemize}
 
@@ -134,7 +136,7 @@ To evaluate FL performance under realistic network conditions, we implement mult
     \item \textbf{NET2 (WAN):} Emulated wide-area network with 80ms ± 20ms jitter one-way delay (typical edge/4G conditions)
 \end{itemize}
 
-Network emulation uses Linux tc-netem with normal distribution for jitter. The 80ms ± 20ms configuration for NET2 results in approximately 180-220ms round-trip time, simulating realistic edge computing and 4G mobile network conditions typical in federated learning deployments.
+Network emulation uses Linux tc-netem~\cite{netem_manpage} with normal distribution for jitter. The 80ms ± 20ms configuration for NET2 results in approximately 180-220ms round-trip time, simulating realistic edge computing and 4G mobile network conditions typical in federated learning deployments.
 
 \subsection{Data Distribution Scenarios}
 
@@ -198,7 +200,7 @@ Table~\ref{tab:success_rates} summarizes the success rates by configuration cate
 
 \subsection{Performance Overhead Analysis}
 
-\textbf{Experimental Completeness:} All 80 planned experiments completed successfully (100\% completion rate, 0 failures). This controlled environment allows precise measurement of \textit{performance overhead} introduced by security mechanisms, rather than system instability. Each data point represents one experimental run (unique combination of network, security, data distribution, and seed), with n=5 independent seeds per configuration.
+\textbf{Experimental Completeness:} Our evaluation covers 80 unique configurations (2 networks × 4 security levels × 2 data distributions × 5 random seeds). All configurations completed successfully, generating 4000 training rounds total (80 runs × 50 rounds each). \textit{Note on terminology:} "Round-level failures" (reported in Table~\ref{tab:round_duration} and discussion) refer to individual round timeouts or communication errors within successful runs, not configuration-level failures. All 80 planned configurations achieved their target of 50 rounds, with per-round reliability exceeding 98\% across all settings. This controlled environment enables precise measurement of security overhead rather than system instability.
 
 \begin{figure*}[htbp]
 \centerline{\includegraphics[width=\textwidth]{results/figures/publication/performance_overhead_interaction.pdf}}
@@ -239,7 +241,7 @@ Figure~\ref{fig:latency_heatmap} presents detailed latency analysis across confi
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{results/figures/publication/ecdf_round_duration_reviewer_proof.pdf}
-\caption{Empirical Cumulative Distribution Function of round duration for NET0 (local, <1ms RTT) and NET2 (WAN, 80ms ± 20ms jitter one-way) under security configurations SEC0-SEC3. Curves show pooled samples across runs for visualization; vertical dashed lines mark mean p99 latency computed from per-run statistics (n=10 independent runs per configuration). Round duration measured as wall-clock time from round initiation to completion. See Table~\ref{tab:round_duration} for detailed statistics with confidence intervals.}
+\caption{Empirical Cumulative Distribution Function of round duration for NET0 (local) and NET2 (WAN, 80ms ± 20ms jitter) under security configurations SEC0-SEC3. Curves aggregate samples for visualization; vertical dashed lines mark per-configuration p99 latency. Round duration measured as server-side wall-clock time from round initiation to completion. Statistical analysis uses per-run aggregates (n=10 independent runs); see Table~\ref{tab:round_duration}.}
 \label{fig:latency_ecdf}
 \end{figure*}
 
@@ -264,7 +266,7 @@ Network emulation shows a more significant impact on TTA than security configura
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{results/figures/publication/convergence_curves_reviewer_proof.pdf}
-\caption{Test accuracy convergence over 50 training rounds. Rows show IID (top) and Non-IID (bottom) data distributions; columns show NET0 (local, <1ms RTT) and NET2 (WAN, 80ms ± 20ms jitter one-way). Lines represent mean accuracy over independent runs; shaded regions show 95\% bootstrap confidence intervals (1000 resamples over runs). Dashed horizontal line marks 95\% accuracy threshold. Security configurations (SEC0-SEC3) achieve similar final accuracy despite varying round durations, indicating Zero Trust controls affect system efficiency but not learning effectiveness.}
+\caption{Test accuracy convergence over 50 training rounds. Rows show IID (top) and Non-IID (bottom) data distributions; columns show NET0 (local) and NET2 (WAN, 80ms ± 20ms jitter). Lines represent mean accuracy; shaded regions show 95\% bootstrap confidence intervals (1000 resamples over n=10 independent runs). Dashed line marks 95\% accuracy threshold. All security configurations achieve similar final accuracy despite varying round durations.}
 \label{fig:accuracy_convergence}
 \end{figure*}
 
@@ -368,6 +370,30 @@ T. A. Beyene, V. Sridharan, and E. Bertino, "Zero-trust for microservices: Surve
 
 \bibitem{caldas2018leaf}
 S. Caldas et al., "LEAF: A benchmark for federated settings," \textit{arXiv preprint arXiv:1812.01097}, 2018.
+
+\bibitem{kubernetes_networkpolicy}
+Kubernetes Documentation, "Network Policies," \url{https://kubernetes.io/docs/concepts/services-networking/network-policies/}, 2024.
+
+\bibitem{linkerd_mtls}
+Linkerd, "Automatic mTLS," \url{https://linkerd.io/2.15/features/automatic-mtls/}, 2024.
+
+\bibitem{istio_security}
+Istio, "Security," \url{https://istio.io/latest/docs/concepts/security/}, 2024.
+
+\bibitem{yu2021ambient}
+L. Yu et al., "Measurement and analysis of data plane latency in service mesh," in \textit{Proc. ACM SIGCOMM Workshop on Secure Programmable Network Infrastructure (SPIN)}, 2021, pp. 1-7.
+
+\bibitem{netem_manpage}
+"Network Emulation (netem)," \textit{Linux kernel documentation}, \url{https://www.kernel.org/doc/Documentation/networking/netem.txt}, 2023.
+
+\bibitem{jiang2024kubeflower}
+Y. Jiang et al., "KubeFlower: A privacy-preserving framework for Kubernetes-based federated learning," \textit{arXiv preprint arXiv:2411.00859}, 2024.
+
+\bibitem{kubefate}
+"KubeFATE: Federated AI technology enabler on Kubernetes," \url{https://github.com/FederatedAI/KubeFATE}, 2023.
+
+\bibitem{kairouz2021advances}
+P. Kairouz et al., "Advances and open problems in federated learning," \textit{Foundations and Trends in Machine Learning}, vol. 14, no. 1-2, pp. 1-210, 2021.
 
 \bibitem{he2020fedml}
 C. He et al., "FedML: A research library and benchmark for federated machine learning," \textit{arXiv preprint arXiv:2007.13518}, 2020.

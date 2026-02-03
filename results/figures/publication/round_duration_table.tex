@@ -1,20 +1,20 @@
 \begin{table}[t]
 \centering
-\caption{Round duration statistics (mean ± 95\% CI over runs)}
+\caption{Round duration statistics (mean ± 95\% CI over n=10 independent runs per configuration). Confidence intervals computed via bootstrap resampling (1000 iterations) to avoid distributional assumptions with small sample sizes.}
 \label{tab:round_duration}
 \begin{tabular}{lcccc}
 \toprule
 Config & n & Median (s) & p99 (s) & Overhead \\
 \midrule
-NET0/SEC0 & 10 & 5.09 [4.91, 5.27] & 6.13 [5.91, 6.36] & — \\
-NET0/SEC1 & 10 & 5.90 [5.80, 6.03] & 7.08 [6.89, 7.27] & +15.4\% \\
-NET0/SEC2 & 10 & 6.66 [6.50, 6.82] & 7.74 [7.54, 7.97] & +26.3\% \\
-NET0/SEC3 & 10 & 7.09 [6.82, 7.33] & 8.22 [7.98, 8.47] & +34.1\% \\
+NET0/SEC0 & 10 & 5.09 [4.93, 5.26] & 6.13 [5.93, 6.34] & — \\
+NET0/SEC1 & 10 & 5.90 [5.80, 6.01] & 7.08 [6.88, 7.28] & +15.4\% \\
+NET0/SEC2 & 10 & 6.66 [6.49, 6.84] & 7.74 [7.53, 7.97] & +26.3\% \\
+NET0/SEC3 & 10 & 7.09 [6.81, 7.35] & 8.22 [7.99, 8.46] & +34.1\% \\
 \midrule
-NET2/SEC0 & 10 & 6.82 [6.59, 7.11] & 7.91 [7.65, 8.23] & — \\
-NET2/SEC1 & 10 & 7.81 [7.66, 7.96] & 8.94 [8.74, 9.16] & +13.1\% \\
-NET2/SEC2 & 10 & 8.23 [8.02, 8.43] & 9.33 [9.18, 9.50] & +18.1\% \\
-NET2/SEC3 & 10 & 8.53 [8.33, 8.75] & 9.60 [9.41, 9.83] & +21.5\% \\
+NET2/SEC0 & 10 & 6.82 [6.59, 7.12] & 7.91 [7.64, 8.22] & — \\
+NET2/SEC1 & 10 & 7.81 [7.65, 7.97] & 8.94 [8.70, 9.16] & +13.1\% \\
+NET2/SEC2 & 10 & 8.23 [8.01, 8.43] & 9.33 [9.18, 9.48] & +18.1\% \\
+NET2/SEC3 & 10 & 8.53 [8.33, 8.73] & 9.60 [9.39, 9.81] & +21.5\% \\
 \bottomrule
 \end{tabular}
 \end{table}

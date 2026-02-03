@@ -85,6 +85,8 @@ def create_convergence_curves_reviewer_proof(output_dir: Path):
     sec_levels = ['SEC0', 'SEC1', 'SEC2', 'SEC3']
     colors = {'SEC0': '#377eb8', 'SEC1': '#ff7f00', 
               'SEC2': '#4daf4a', 'SEC3': '#e41a1c'}
+    # Colorblind-safe line styles (distinguishable in grayscale)
+    linestyles = {'SEC0': '-', 'SEC1': '--', 'SEC2': '-.', 'SEC3': ':'}
     
     # Network labels with CORRECT tc-netem configuration
     net_labels = {'NET0': 'NET0 (Local, <1ms RTT)', 
@@ -135,13 +137,13 @@ def create_convergence_curves_reviewer_proof(output_dir: Path):
                         ci_lowers.append(np.nan)
                         ci_uppers.append(np.nan)
                 
-                # Plot
+                # Plot - use linestyle for colorblind accessibility
                 means = np.array(means)
                 ci_lowers = np.array(ci_lowers)
                 ci_uppers = np.array(ci_uppers)
                 
                 ax.plot(rounds, means, label=sec, color=colors[sec],
-                       linewidth=2.0, alpha=0.9)
+                       linestyle=linestyles[sec], linewidth=2.0, alpha=0.9)
                 ax.fill_between(rounds, ci_lowers, ci_uppers,
                                color=colors[sec], alpha=0.15)
             
@@ -222,6 +224,8 @@ def create_ecdf_reviewer_proof(output_dir: Path):
     sec_levels = ['SEC0', 'SEC1', 'SEC2', 'SEC3']
     colors = {'SEC0': '#377eb8', 'SEC1': '#ff7f00', 
               'SEC2': '#4daf4a', 'SEC3': '#e41a1c'}
+    # Colorblind-safe line styles
+    linestyles = {'SEC0': '-', 'SEC1': '--', 'SEC2': '-.', 'SEC3': ':'}
     
     net_labels = {'NET0': 'NET0 (Local, <1ms RTT)', 
                   'NET2': 'NET2 (WAN, 80ms±20ms jitter)'}
@@ -243,17 +247,19 @@ def create_ecdf_reviewer_proof(output_dir: Path):
             yvals = np.arange(1, len(sorted_data) + 1) / len(sorted_data)
             
             ax.plot(sorted_data, yvals, label=sec,
-                   color=colors[sec], linewidth=2.0, alpha=0.9)
+                   color=colors[sec], linestyle=linestyles[sec], 
+                   linewidth=2.0, alpha=0.9)
             
             # Calculate p99 from per-run statistics (CORRECT)
             run_p99s = stats_df[(stats_df['sec'] == sec) & 
                                (stats_df['net'] == net)]['p99']
             mean_p99 = run_p99s.mean()
             
-            # Mark p99 for each config (not just baseline)
-            linestyle = ['--', '-.', ':', (0, (3, 1, 1, 1))][sec_levels.index(sec)]
-            ax.axvline(x=mean_p99, color=colors[sec], linestyle=linestyle,
-                      linewidth=1.2, alpha=0.4)
+            # Mark p99 for each config with thin vertical lines
+            # Use same linestyle as curve for clarity
+            ax.axvline(x=mean_p99, color=colors[sec], 
+                      linestyle=linestyles[sec],
+                      linewidth=1.0, alpha=0.5)
         
         # Styling
         ax.set_title(net_labels[net], fontweight='bold', fontsize=10)
@@ -339,7 +345,7 @@ def create_statistics_table(output_dir: Path):
     table_lines = []
     table_lines.append("\\begin{table}[t]")
     table_lines.append("\\centering")
-    table_lines.append("\\caption{Round duration statistics (mean ± 95\\% CI over runs)}")
+    table_lines.append("\\caption{Round duration statistics (mean \u00b1 95\\% CI over n=10 independent runs per configuration). Confidence intervals computed via bootstrap resampling (1000 iterations) to avoid distributional assumptions with small sample sizes.}")
     table_lines.append("\\label{tab:round_duration}")
     table_lines.append("\\begin{tabular}{lcccc}")
     table_lines.append("\\toprule")
