@@ -49,7 +49,7 @@ class SimpleCNN(nn.Module):
         x = F.relu(x)
         x = self.dropout2(x)
         x = self.fc2(x)
-        return F.log_softmax(x, dim=1)
+        return x
 
 
 def load_test_data():
@@ -81,6 +81,7 @@ def evaluate_global_model(
     device: torch.device
 ) -> Tuple[float, float]:
     """Evaluate model on test set"""
+    criterion = nn.CrossEntropyLoss(reduction='sum')
     model.eval()
     test_loss = 0
     correct = 0
@@ -89,7 +90,7 @@ def evaluate_global_model(
         for data, target in testloader:
             data, target = data.to(device), target.to(device)
             output = model(data)
-            test_loss += F.nll_loss(output, target, reduction='sum').item()
+            test_loss += criterion(output, target).item()
             pred = output.argmax(dim=1, keepdim=True)
             correct += pred.eq(target.view_as(pred)).sum().item()
     
