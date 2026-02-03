@@ -57,10 +57,19 @@ def create_convergence_curves_reviewer_proof(output_dir: Path):
     # Parse run_id
     def parse_run_id(run_id):
         parts = run_id.split('_')
+        # Data has 'IID' and 'NonIID' (no hyphen)
+        data_dist = parts[2]
+        if data_dist == 'IID':
+            display_name = 'IID'
+        elif data_dist == 'NonIID':
+            display_name = 'Non-IID'
+        else:
+            display_name = data_dist
+        
         return {
             'sec': parts[0], 
             'net': parts[1], 
-            'iid': 'IID' if parts[2] == 'iid' else 'Non-IID',
+            'iid': display_name,
             'seed': parts[3]
         }
     
