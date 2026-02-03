@@ -225,62 +225,56 @@ def wait_for_server_ready(namespace: str, run_id: str, timeout: int = 300):
 
 
 def wait_for_completion(namespace: str, run_id: str, timeout: int = 3600):
-    """Wait for all client jobs to complete"""
+    """Wait for experiment completion by monitoring server logs"""
     log_event("wait_completion_start", namespace=namespace, run_id=run_id, timeout_sec=timeout)
     start = time.time()
     
-    # Wait a bit for jobs to be created
-    time.sleep(3)
+    # Wait for server pod to exist
+    time.sleep(5)
     
     while time.time() - start < timeout:
-        # Check all client jobs for this specific run
+        # Get server pod name
         result = run_command([
-            "kubectl", "get", "jobs",
+            "kubectl", "get", "pods",
             "-n", namespace,
-            "-l", f"run-id={run_id}",
-            "-o", "json"
+            "-l", f"run-id={run_id},app=fl-server",
+            "-o", "jsonpath={.items[0].metadata.name}"
         ], check=False)
         
-        if result.returncode != 0:
+        if result.returncode != 0 or not result.stdout.strip():
+            log_event("wait_server_pod", namespace=namespace, run_id=run_id, status="not_found")
             time.sleep(5)
             continue
         
-        jobs_data = json.loads(result.stdout or "{}")
-        items = jobs_data.get("items", [])
+        server_pod = result.stdout.strip()
         
-        if not items:
-            # Jobs not created yet, wait
-            time.sleep(5)
-            continue
+        # Check server logs for experiment_end event
+        result = run_command([
+            "kubectl", "logs",
+            "-n", namespace,
+            server_pod
+        ], check=False)
         
-        all_complete = True
-        failed = False
-        
-        for job in items:
-            status = job.get("status", {})
-            succeeded = status.get("succeeded", 0)
-            failed_count = status.get("failed", 0)
-            
-            if failed_count > 0:
-                log_event(
-                    "job_failed",
-                    job_name=job["metadata"]["name"],
-                    failed_count=failed_count
-                )
-                failed = True
-            elif succeeded == 0:
-                all_complete = False
-        
-        if failed:
-            log_event("wait_completion_failed", namespace=namespace, run_id=run_id)
-            return False
-        
-        if all_complete:
+        if result.returncode == 0 and '"event": "experiment_end"' in result.stdout:
             duration = time.time() - start
             log_event("wait_completion_success", namespace=namespace, run_id=run_id, duration_sec=duration)
             return True
         
-        time.sleep(5)
+        # Check if pod failed
+        result = run_command([
+            "kubectl", "get", "pod",
+            "-n", namespace,
+            server_pod,
+            "-o", "jsonpath={.status.phase}"
+        ], check=False)
+        
+        if result.returncode == 0:
+            phase = result.stdout.strip()
+            if phase in ["Failed", "Error", "Unknown"]:
+                log_event("wait_completion_failed", namespace=namespace, run_id=run_id, pod_phase=phase)
+                return False
+        
+        time.sleep(10)
     
     log_event("wait_completion_timeout", namespace=namespace, run_id=run_id, timeout_sec=timeout)
     return False
