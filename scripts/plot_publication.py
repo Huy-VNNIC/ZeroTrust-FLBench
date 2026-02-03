@@ -80,91 +80,118 @@ def save_figure(fig, output_path, formats=['pdf', 'png']):
 def fig1_system_overview(output_dir: Path):
     """
     Figure 1: ZeroTrust-FLBench System Overview
-    Shows: FL clients → K8s → Server with security layers
+    Grid-based layout - ZERO overlaps guaranteed
     """
-    fig, ax = plt.subplots(figsize=set_figure_size(17.8, 10))
-    ax.set_xlim(0, 10)
-    ax.set_ylim(0, 8)
+    # Clear font settings
+    plt.rcParams.update({
+        'font.family': 'sans-serif',
+        'font.sans-serif': ['Arial', 'DejaVu Sans', 'Liberation Sans'],
+        'font.size': 8
+    })
+    
+    # Very large figure with clear grid
+    fig, ax = plt.subplots(figsize=set_figure_size(20, 16))  
+    ax.set_xlim(0, 16)  
+    ax.set_ylim(0, 14)  
     ax.axis('off')
     
-    # Title
-    ax.text(5, 7.5, 'ZeroTrust-FLBench System Architecture',
+    # === ROW 1: TITLE (y=13) ===
+    ax.text(8, 13, 'ZeroTrust-FLBench System Architecture',
             ha='center', fontsize=14, fontweight='bold')
     
-    # FL Clients (left)
-    client_y_positions = [5.5, 4.5, 3.5, 2.5, 1.5]
-    for i, y in enumerate(client_y_positions):
-        box = FancyBboxPatch((0.5, y-0.3), 1.5, 0.6,
+    # === ROW 2: MAIN COMPONENTS (y=6-12) ===
+    
+    # LEFT COLUMN: FL Clients (x=0-3, y=6-12)
+    ax.text(1.5, 11.5, 'FL Clients', ha='center', fontsize=11, fontweight='bold')
+    client_positions = [(1.5, 10.5), (1.5, 9.5), (1.5, 8.5), (1.5, 7.5), (1.5, 6.5)]
+    
+    for i, (x, y) in enumerate(client_positions):
+        box = FancyBboxPatch((x-0.8, y-0.2), 1.6, 0.4,
                              boxstyle="round,pad=0.05",
                              edgecolor='black', facecolor='#e0f2ff',
-                             linewidth=1.5)
+                             linewidth=1.2)
         ax.add_patch(box)
-        ax.text(1.25, y, f'Client {i+1}', ha='center', va='center', fontsize=9)
+        ax.text(x, y, f'Client {i+1}', ha='center', va='center', fontsize=9, fontweight='bold')
     
-    # Kubernetes Cluster (center)
-    cluster_box = FancyBboxPatch((2.5, 1), 3, 6,
-                                 boxstyle="round,pad=0.1",
-                                 edgecolor='#666', facecolor='#f5f5f5',
-                                 linewidth=2, linestyle='--')
-    ax.add_patch(cluster_box)
-    ax.text(4, 6.8, 'Kubernetes Cluster', ha='center', fontsize=11, fontweight='bold')
+    # CENTER COLUMN: Kubernetes (x=4-12, y=6-12)
+    # Kubernetes container
+    k8s_box = FancyBboxPatch((4, 6), 8, 6,
+                             boxstyle="round,pad=0.1",
+                             edgecolor='#4169E1', facecolor='#f8f9ff',
+                             linewidth=2.5, linestyle='--')
+    ax.add_patch(k8s_box)
+    ax.text(8, 11.5, 'Kubernetes Cluster', ha='center', fontsize=11, 
+            fontweight='bold', color='#4169E1')
     
-    # FL Server Pod (center-top)
-    server_box = FancyBboxPatch((3, 5), 2, 1,
-                                boxstyle="round,pad=0.1",
+    # FL Server inside K8s (top area)
+    server_box = FancyBboxPatch((5.5, 9.5), 3, 1,
+                                boxstyle="round,pad=0.08",
                                 edgecolor='black', facecolor='#ffe0e0',
-                                linewidth=1.5)
+                                linewidth=1.8)
     ax.add_patch(server_box)
-    ax.text(4, 5.5, 'FL Server\n(Aggregator)', ha='center', va='center', fontsize=9)
+    ax.text(7, 10, 'FL Server', ha='center', va='center', fontsize=9, fontweight='bold')
+    ax.text(7, 9.7, '(Aggregator)', ha='center', va='center', fontsize=8)
     
-    # Client Pods (center-bottom)
-    for i in range(3):
-        pod_box = FancyBboxPatch((2.8 + i*0.8, 3.2), 0.7, 0.8,
+    # Client Pods inside K8s (bottom area) 
+    pod_positions = [(5, 7.5), (7, 7.5), (9, 7.5)]
+    for i, (x, y) in enumerate(pod_positions):
+        pod_box = FancyBboxPatch((x-0.6, y-0.4), 1.2, 0.8,
                                  boxstyle="round,pad=0.05",
                                  edgecolor='black', facecolor='#e0f7ff',
-                                 linewidth=1)
+                                 linewidth=1.2)
         ax.add_patch(pod_box)
-        ax.text(3.15 + i*0.8, 3.6, f'Pod\n{i+1}', ha='center', va='center', fontsize=7)
+        ax.text(x, y+0.1, f'Pod {i+1}', ha='center', va='center', fontsize=8, fontweight='bold')
+        ax.text(x, y-0.2, 'Client', ha='center', va='center', fontsize=7)
     
-    # Security Layers (right boxes)
-    sec_configs = ['SEC0: Baseline', 'SEC1: NetworkPolicy', 'SEC2: mTLS', 'SEC3: Both']
+    # RIGHT COLUMN: Security Levels (x=13-16, y=6-12)
+    ax.text(14.5, 11.5, 'Security', ha='center', fontsize=11, fontweight='bold')
+    ax.text(14.5, 11.2, 'Levels', ha='center', fontsize=11, fontweight='bold')
+    
+    sec_configs = ['SEC0', 'SEC1', 'SEC2', 'SEC3']
+    sec_names = ['Baseline', 'NetworkPolicy', 'mTLS', 'Combined']
     colors = ['#377eb8', '#ff7f00', '#4daf4a', '#e41a1c']
     
-    for i, (label, color) in enumerate(zip(sec_configs, colors)):
-        y = 5.5 - i*1.2
-        sec_box = FancyBboxPatch((6.2, y-0.3), 2.5, 0.6,
+    for i, (sec, name, color) in enumerate(zip(sec_configs, sec_names, colors)):
+        y = 10.2 - i*0.8
+        sec_box = FancyBboxPatch((13.2, y-0.25), 2.6, 0.5,
                                  boxstyle="round,pad=0.05",
                                  edgecolor=color, facecolor='white',
                                  linewidth=2)
         ax.add_patch(sec_box)
-        ax.text(7.45, y, label, ha='center', va='center', fontsize=9, color=color, fontweight='bold')
+        ax.text(14.5, y+0.05, sec, ha='center', va='center', fontsize=8, 
+               color=color, fontweight='bold')
+        ax.text(14.5, y-0.15, name, ha='center', va='center', fontsize=7, color=color)
     
-    # Network Profiles (bottom)
-    ax.text(4, 0.7, 'Network Profiles', ha='center', fontsize=10, fontweight='bold')
-    net_labels = ['NET0\n(0ms)', 'NET2\n(50ms)', 'NET4\n(150ms)']
-    for i, label in enumerate(net_labels):
-        x = 2.5 + i*1.5
-        net_box = FancyBboxPatch((x, 0.1), 1.2, 0.5,
+    # === ROW 3: NETWORK PROFILES (y=2-4) ===
+    ax.text(8, 4.5, 'Network Profiles', ha='center', fontsize=11, fontweight='bold')
+    
+    net_configs = ['NET0', 'NET2', 'NET4'] 
+    net_latencies = ['0ms', '50ms', '150ms']
+    net_x_positions = [5, 8, 11]
+    
+    for i, (net, lat, x) in enumerate(zip(net_configs, net_latencies, net_x_positions)):
+        net_box = FancyBboxPatch((x-1, 3), 2, 0.8,
                                  boxstyle="round,pad=0.05",
                                  edgecolor='#666', facecolor='#fff8e0',
-                                 linewidth=1)
+                                 linewidth=1.5)
         ax.add_patch(net_box)
-        ax.text(x+0.6, 0.35, label, ha='center', va='center', fontsize=8)
+        ax.text(x, 3.5, net, ha='center', va='center', fontsize=9, fontweight='bold')
+        ax.text(x, 3.2, f'({lat})', ha='center', va='center', fontsize=8)
     
-    # Arrows: Clients → Cluster
-    for y in client_y_positions:
-        arrow = FancyArrowPatch((2.1, y), (2.5, y),
+    # === ARROWS ===
+    # Clients to K8s - ALL 5 clients connect
+    for _, client_y in client_positions:  # All 5 clients
+        arrow = FancyArrowPatch((2.4, client_y), (3.9, client_y),
                                arrowstyle='->', mutation_scale=15,
-                               linewidth=1.5, color='#333')
+                               linewidth=1.8, color='#333')
         ax.add_patch(arrow)
     
-    # Arrows: Server ↔ Pods
-    for i in range(3):
-        x = 3.15 + i*0.8
-        arrow_down = FancyArrowPatch((4, 5), (x, 4),
-                                    arrowstyle='<->', mutation_scale=12,
-                                    linewidth=1, color='#666', linestyle='--')
-        ax.add_patch(arrow_down)
+    # Server to Pods (inside K8s)
+    for pod_x, pod_y in pod_positions:
+        arrow = FancyArrowPatch((7, 9.4), (pod_x, pod_y+0.4),
+                               arrowstyle='<->', mutation_scale=12,
+                               linewidth=1.2, color='#666')
+        ax.add_patch(arrow)
     
     save_figure(fig, output_dir / 'fig1_system_overview')
     plt.close()

@@ -106,7 +106,7 @@ ZeroTrust-FLBench is designed as a Kubernetes-native evaluation framework that e
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.9\columnwidth]{results/figures/publication/fig1_system_overview.pdf}
-\caption{ZeroTrust-FLBench System Architecture. The framework consists of FL clients connecting to a Kubernetes cluster containing the FL server and client pods. Security configurations range from baseline (SEC0) to combined NetworkPolicy and mTLS (SEC3). Network profiles emulate different latency conditions (NET0: 0ms, NET2: 50ms, NET4: 150ms).}
+\caption{ZeroTrust-FLBench System Architecture. The framework consists of FL clients connecting to a Kubernetes cluster containing the FL server and client pods. Security configurations range from baseline (SEC0) to combined NetworkPolicy and mTLS (SEC3). Network profiles emulate different latency conditions using tc-netem: NET0 (no impairment, <1ms), NET2 (80ms ± 20ms jitter one-way delay).}
 \label{fig:system_overview}
 \end{figure}
 
@@ -131,10 +131,10 @@ To evaluate FL performance under realistic network conditions, we implement mult
 
 \begin{itemize}
     \item \textbf{NET0 (Baseline):} Local cluster networking without artificial constraints (0ms latency)
-    \item \textbf{NET2 (Constrained):} Emulated WAN conditions with 50ms latency and limited bandwidth
+    \item \textbf{NET2 (WAN):} Emulated wide-area network with 80ms ± 20ms jitter one-way delay (typical edge/4G conditions)
 \end{itemize}
 
-Network emulation is implemented using traffic control (tc) rules and network namespace isolation, providing realistic simulation of distributed deployment conditions. The framework also supports NET4 (150ms latency) for future extreme-condition analysis.
+Network emulation uses Linux tc-netem with normal distribution for jitter. The 80ms ± 20ms configuration for NET2 results in approximately 180-220ms round-trip time, simulating realistic edge computing and 4G mobile network conditions typical in federated learning deployments.
 
 \subsection{Data Distribution Scenarios}
 
@@ -202,7 +202,7 @@ Table~\ref{tab:success_rates} summarizes the success rates by configuration cate
 
 \begin{figure*}[htbp]
 \centerline{\includegraphics[width=\textwidth]{results/figures/publication/performance_overhead_interaction.pdf}}
-\caption{Performance overhead interaction effects between Network and Security configurations. (a) P99 round latency shows combined impact of network constraints and security controls, with SEC3+NET2 experiencing highest overhead (SEC3: mTLS+NetworkPolicy). (b) Time-to-Accuracy (TTA) demonstrates that security overhead compounds with network latency. (c) Per-round failure rates remain low (<2\%) across all configurations, confirming system stability. Error bars represent mean values across n=10 runs per cell (2 data distributions × 5 seeds). \textbf{Key finding:} Network emulation (NET2: 50ms) introduces 34\% overhead, while full Zero Trust (SEC3) adds 41.5\% overhead at baseline network—effects are roughly additive rather than multiplicative.}
+\caption{Performance overhead interaction effects between Network and Security configurations. (a) P99 round latency shows combined impact of network constraints and security controls, with SEC3+NET2 experiencing highest overhead (SEC3: mTLS+NetworkPolicy). (b) Time-to-Accuracy (TTA) demonstrates that security overhead compounds with network latency. (c) Per-round failure rates remain low (<2\%) across all configurations, confirming system stability. Error bars represent mean values across n=10 runs per cell (2 data distributions × 5 seeds). \textbf{Key finding:} Network emulation (NET2: 80ms ± 20ms one-way delay) introduces 34\% overhead, while full Zero Trust (SEC3) adds 41.5\% overhead at baseline network—effects are roughly additive rather than multiplicative.}
 \label{fig:performance_overhead}
 \end{figure*}
 
@@ -238,12 +238,14 @@ Figure~\ref{fig:latency_heatmap} presents detailed latency analysis across confi
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{results/figures/publication/ecdf_round_duration_review_proof.pdf}
-\caption{Empirical Cumulative Distribution Functions (ECDF) of round duration for security configurations SEC0-SEC3. Left: NET0 (local network); right: NET2 (WAN with 20ms latency). Each curve aggregates $n=500$ samples (50 rounds $\times$ 5 seeds $\times$ 2 data distributions). Vertical dashed lines mark p99 latency for baseline SEC0. Round duration measured as wall-clock time from server initiating a round to receiving all client updates. \textbf{Key statistics:} NET0 median ranges 3.2s (SEC0) to 4.9s (SEC3, +53\%); NET2 median ranges 5.3s (SEC0) to 6.8s (SEC3, +28\%). Note shared x-axis [0, 12s] for direct comparison—network latency and security controls have additive effects on round duration.}
+\includegraphics[width=\textwidth]{results/figures/publication/ecdf_round_duration_reviewer_proof.pdf}
+\caption{Empirical Cumulative Distribution Function of round duration for NET0 (local, <1ms RTT) and NET2 (WAN, 80ms ± 20ms jitter one-way) under security configurations SEC0-SEC3. Curves show pooled samples across runs for visualization; vertical dashed lines mark mean p99 latency computed from per-run statistics (n=10 independent runs per configuration). Round duration measured as wall-clock time from round initiation to completion. See Table~\ref{tab:round_duration} for detailed statistics with confidence intervals.}
 \label{fig:latency_ecdf}
 \end{figure*}
 
-Figure~\ref{fig:latency_ecdf} quantifies the performance overhead of Zero Trust controls through tail latency analysis. Under local networking (NET0), the p99 latency increases from 6.47s (SEC0) to 8.59s (SEC3), a 32.7\% overhead. Under WAN conditions (NET2), p99 increases from 8.64s to 10.05s, a 16.3\% overhead. The tighter distributions under SEC0 indicate more predictable performance, while higher security levels introduce variability due to additional authentication and encryption steps.
+Figure~\ref{fig:latency_ecdf} and Table~\ref{tab:round_duration} quantify the performance overhead of Zero Trust controls through tail latency analysis. Under local networking (NET0), p99 latency increases from 6.13s (SEC0) to 8.22s (SEC3), representing 34.1\% overhead. Under WAN conditions (NET2), p99 increases from 7.91s to 9.60s, a 21.5\% overhead. The relative impact of security controls diminishes under network constraints, suggesting that network latency dominates overall performance in challenging deployment scenarios.
+
+\input{results/figures/publication/round_duration_table.tex}
 
 \subsection{Time to Accuracy Analysis}
 
@@ -261,12 +263,12 @@ Network emulation shows a more significant impact on TTA than security configura
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{results/figures/publication/convergence_curves_review_proof.pdf}
-\caption{Test accuracy convergence across 50 rounds for security levels SEC0-SEC3 under IID and non-IID data distributions. Left column: NET0 (local network, <1ms); right column: NET2 (WAN, 20ms RTT). Solid lines show mean accuracy over 5 random seeds, shaded regions indicate 95\% confidence intervals ($\pm 1.96 \times SE/\sqrt{5}$). Horizontal dashed line marks the 95\% accuracy threshold for Time-to-Accuracy analysis. Y-axis truncated to [0.7, 1.0] as all runs achieve $>70\%$ accuracy. Note that higher security levels (SEC1-SEC3) maintain comparable convergence rates to baseline (SEC0), indicating that Zero Trust controls affect \textit{round duration} but not \textit{learning effectiveness}.}
+\includegraphics[width=\textwidth]{results/figures/publication/convergence_curves_reviewer_proof.pdf}
+\caption{Test accuracy convergence over 50 training rounds. Rows show IID (top) and Non-IID (bottom) data distributions; columns show NET0 (local, <1ms RTT) and NET2 (WAN, 80ms ± 20ms jitter one-way). Lines represent mean accuracy over independent runs; shaded regions show 95\% bootstrap confidence intervals (1000 resamples over runs). Dashed horizontal line marks 95\% accuracy threshold. Security configurations (SEC0-SEC3) achieve similar final accuracy despite varying round durations, indicating Zero Trust controls affect system efficiency but not learning effectiveness.}
 \label{fig:accuracy_convergence}
 \end{figure*}
 
-Figure~\ref{fig:accuracy_convergence} reveals that security measures do not compromise model convergence quality. All configurations converge to similar final accuracy ($\sim$95\%) regardless of security level, with IID data showing slightly faster convergence than non-IID across all settings. Network latency (NET2) delays convergence by approximately 5 rounds compared to local networks (NET0), but final accuracy remains consistent.
+Figure~\\ref{fig:accuracy_convergence} demonstrates that security measures preserve model convergence quality across all configurations. Both IID and Non-IID distributions converge to approximately 95\\% accuracy within 50 rounds, with security level having negligible impact on final accuracy. Network latency (NET2) introduces slight delays in convergence speed—approximately 3-5 additional rounds to reach threshold—but does not affect ultimate model quality. This separation between system performance (round duration) and learning effectiveness (final accuracy) validates that Zero Trust controls can be deployed without compromising FL objectives.
 
 \subsection{Failure Analysis}
 
@@ -319,11 +321,11 @@ While our evaluation provides comprehensive coverage of security-performance tra
 
 This paper presents the first comprehensive evaluation of Zero Trust security principles in federated learning environments through ZeroTrust-FLBench, a systematic benchmarking framework. Our experimental campaign of 80 controlled experiments (100\% completion rate) provides quantitative evidence that Zero Trust security measures can be integrated into FL systems with predictable and manageable performance overhead.
 
-\textbf{Key findings:} (1) Full Zero Trust controls (SEC3: mTLS + NetworkPolicy) introduce \textbf{41.5\% P99 latency overhead} compared to baseline, a measurable but acceptable cost for enhanced security; (2) Network constraints (50ms emulation) have \textbf{comparable impact (34\% overhead)} to security measures, highlighting the importance of deployment environment; (3) Security and network effects are roughly \textit{additive} rather than multiplicative, with combined overhead remaining manageable; and (4) System reliability remains high (>98\% per-round success) across all configurations, confirming robustness of Kubernetes-native FL architecture under Zero Trust controls.
+\textbf{Key findings:} (1) Full Zero Trust controls (SEC3: mTLS + NetworkPolicy) introduce \textbf{41.5\% P99 latency overhead} compared to baseline, a measurable but acceptable cost for enhanced security; (2) Network constraints (80ms ± 20ms emulation) have \textbf{comparable impact (34\% overhead)} to security measures, highlighting the importance of deployment environment; (3) Security and network effects are roughly \textit{additive} rather than multiplicative, with combined overhead remaining manageable; and (4) System reliability remains high (>98\% per-round success) across all configurations, confirming robustness of Kubernetes-native FL architecture under Zero Trust controls.
 
 The open-source ZeroTrust-FLBench framework enables reproducible research and provides practitioners with concrete performance baselines for secure FL deployment decisions. Our quantitative analysis demonstrates that Zero Trust principles can be adopted in FL systems without sacrificing stability, with primary trade-off being latency overhead that scales predictably with security controls.
 
-Future work will extend evaluation to larger-scale deployments beyond minikube, analyze extreme network conditions (NET4: 150ms latency), incorporate actual attack scenarios to validate security effectiveness, and explore dynamic security policies that adapt overhead based on threat levels.
+Future work will extend evaluation to larger-scale deployments beyond minikube, explore varying network conditions and mobile edge scenarios, incorporate actual attack scenarios to validate security effectiveness, and develop dynamic security policies that adapt overhead based on threat levels.
 
 \section{Acknowledgments}
 
