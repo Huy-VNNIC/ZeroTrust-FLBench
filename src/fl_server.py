@@ -235,6 +235,7 @@ def main():
     # Create strategy
     strategy = LoggingFedAvg(
         min_available_clients=args.min_clients,
+        min_fit_clients=args.min_clients,  # Ensure all clients participate
         fraction_fit=args.fraction_fit,
         fraction_evaluate=args.fraction_evaluate,
     )
